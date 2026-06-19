@@ -5,101 +5,103 @@
 **CodeDour** leverages PostgreSQL as its primary data management and processing engine, storing and managing problems, test cases, submissions, contests, rankings, achievements, and user-related data. By combining real-time code execution with a robust relational database architecture, **CodeDour** aims to deliver a scalable and efficient competitive programming experience while demonstrating the practical application of advanced database concepts in a real-world system.
 
 ## FOLDER STRUTURE
-CodeDour/ <br>
-├── frontend/ <br>                         
-│   ├── public/ <br>
-│   ├── src/ <br>
-│   │   ├── assets/ <br>
-│   │   ├── components/ <br>
-│   │   │   ├── common/     <br>           
-│   │   │   ├── editor/         <br>       
-│   │   │   ├── leaderboard/<br>
-│   │   │   ├── problems/<br>
-│   │   │   ├── contests/<br>
-│   │   │   └── submissions/<br>
-│   │   ├── pages/<br>
-│   │   │   ├── Home.jsx<br>
-│   │   │   ├── Login.jsx<br>
-│   │   │   ├── Register.jsx<br>
-│   │   │   ├── Profile.jsx<br>
-│   │   │   ├── Problems.jsx<br>
-│   │   │   ├── ProblemDetail.jsx<br>
-│   │   │   ├── Contests.jsx<br>
-│   │   │   ├── ContestDetail.jsx<br>
-│   │   │   ├── Leaderboard.jsx<br>
-│   │   │   └── Submissions.jsx<br>
-│   │   ├── context/               <br>    
-│   │   ├── hooks/                     <br>
-│   │   ├── services/                  <br>
-│   │   │   ├── api.js                 <br>
-│   │   │   ├── authService.js<br>
-│   │   │   ├── problemService.js<br>
-│   │   │   ├── submissionService.js<br>
-│   │   │   └── contestService.js<br>
-│   │   ├── firebase/<br>
-│   │   │   └── config.js<br>              
-│   │   ├── App.jsx<br>
-│   │   └── main.jsx<br>
-│   ├── .env<br>
-│   └── package.json<br>
-│<br>
-├── backend/<br>                           
-│   ├── src/<br>
-│   │   ├── config/<br>
-│   │   │   ├── db.js  <br>                
-│   │   │   └── firebase.js<br>            
-│   │   ├── middleware/<br>
-│   │   │   ├── authMiddleware.js<br>      
-│   │   │   └── errorHandler.js<br>
-│   │   ├── routes/<br>
-│   │   │   ├── auth.routes.js<br>
-│   │   │   ├── user.routes.js<br>
-│   │   │   ├── problem.routes.js<br>
-│   │   │   ├── submission.routes.js<br>
-│   │   │   ├── contest.routes.js<br>
-│   │   │   └── leaderboard.routes.js<br>
-│   │   ├── controllers/<br>
-│   │   │   ├── auth.controller.js<br>
-│   │   │   ├── user.controller.js<br>
-│   │   │   ├── problem.controller.js<br>
-│   │   │   ├── submission.controller.js<br>
-│   │   │   ├── contest.controller.js<br>
-│   │   │   └── leaderboard.controller.js<br>
-│   │   ├── services/<br>
-│   │   │   ├── judge0.service.js<br>      
-│   │   │   └── submission.service.js<br>  
-│   │   └── app.js                     <br>
-│   ├── server.js                      <br>
-│   ├── .env<br>
-│   └── package.json<br>
-│<br>
-├── database/<br>                          
-│   ├── schema/<br>
-│   │   ├── 01_tables.sql<br>              
-│   │   ├── 02_indexes.sql   <br>          
-│   │   └── 03_constraints.sql   <br>      
-│   ├── views/<br>
-│   │   ├── problem_stats_view.sql<br>
-│   │   ├── user_stats_view.sql<br>
-│   │   └── contest_leaderboard_matview.sql<br>  
-│   ├── functions/<br>
-│   │   ├── get_user_statistics.sql<br>
-│   │   ├── recommend_problems.sql<br>
-│   │   ├── generate_leaderboard.sql<br>
-│   │   └── update_contest_ratings.sql<br>
-│   ├── procedures/<br>
-│   │   └── process_submission.sql<br>
-│   ├── triggers/<br>
-│   │   ├── update_solved_count.sql<br>
-│   │   └── award_achievements.sql<br>
-│   ├── seed/<br>
-│   │   ├── seed_users.sql<br>
-│   │   ├── seed_problems.sql<br>
-│   │   └── seed_contests.sql<br>
-│   └── migrations/<br>
-│       └── init.sql   <br>                
-│<br>
-└── README.md<br>
+```
+CodeDour/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   ├── editor/
+│   │   │   ├── leaderboard/
+│   │   │   ├── problems/
+│   │   │   ├── contests/
+│   │   │   └── submissions/
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── Problems.jsx
+│   │   │   ├── ProblemDetail.jsx
+│   │   │   ├── Contests.jsx
+│   │   │   ├── ContestDetail.jsx
+│   │   │   ├── Leaderboard.jsx
+│   │   │   └── Submissions.jsx
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   ├── authService.js
+│   │   │   ├── problemService.js
+│   │   │   ├── submissionService.js
+│   │   │   └── contestService.js
+│   │   ├── firebase/
+│   │   │   └── config.js
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── .env
+│   └── package.json
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── db.js
+│   │   │   └── firebase.js
+│   │   ├── middleware/
+│   │   │   ├── authMiddleware.js
+│   │   │   └── errorHandler.js
+│   │   ├── routes/
+│   │   │   ├── auth.routes.js
+│   │   │   ├── user.routes.js
+│   │   │   ├── problem.routes.js
+│   │   │   ├── submission.routes.js
+│   │   │   ├── contest.routes.js
+│   │   │   └── leaderboard.routes.js
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.js
+│   │   │   ├── user.controller.js
+│   │   │   ├── problem.controller.js
+│   │   │   ├── submission.controller.js
+│   │   │   ├── contest.controller.js
+│   │   │   └── leaderboard.controller.js
+│   │   ├── services/
+│   │   │   ├── judge0.service.js
+│   │   │   └── submission.service.js
+│   │   └── app.js
+│   ├── server.js
+│   ├── .env
+│   └── package.json
+│
+├── database/
+│   ├── schema/
+│   │   ├── 01_tables.sql
+│   │   ├── 02_indexes.sql
+│   │   └── 03_constraints.sql
+│   ├── views/
+│   │   ├── problem_stats_view.sql
+│   │   ├── user_stats_view.sql
+│   │   └── contest_leaderboard_matview.sql
+│   ├── functions/
+│   │   ├── get_user_statistics.sql
+│   │   ├── recommend_problems.sql
+│   │   ├── generate_leaderboard.sql
+│   │   └── update_contest_ratings.sql
+│   ├── procedures/
+│   │   └── process_submission.sql
+│   ├── triggers/
+│   │   ├── update_solved_count.sql
+│   │   └── award_achievements.sql
+│   ├── seed/
+│   │   ├── seed_users.sql
+│   │   ├── seed_problems.sql
+│   │   └── seed_contests.sql
+│   └── migrations/
+│       └── init.sql
+│
+└── README.md
+```
 
 ## TECHNOLOGIES USED
 
