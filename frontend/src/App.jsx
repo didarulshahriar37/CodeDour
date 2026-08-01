@@ -1,16 +1,15 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
-import ProblemSet from "./pages/ProblemSet";
+import Problems from "./pages/Problems";
 import Contests from "./pages/Contests";
 
 function App() {
   return (
     <BrowserRouter>
-
       <nav className="flex gap-6 p-5 bg-slate-900 text-white">
         <Link to="/problems">
-          Problem Set
+          Problems
         </Link>
 
         <Link to="/contests">
@@ -19,24 +18,12 @@ function App() {
       </nav>
 
       <Routes>
+        <Route path="/" element={<Problems />} />
 
-        <Route
-          path="/"
-          element={<ProblemSet />}
-        />
+        <Route path="/problems" element={<Problems />} />
 
-        <Route
-          path="/problems"
-          element={<ProblemSet />}
-        />
-
-        <Route
-          path="/contests"
-          element={<Contests />}
-        />
-
+        <Route path="/contests" element={<Contests />} />
       </Routes>
-
     </BrowserRouter>
   );
 }
