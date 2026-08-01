@@ -1,0 +1,14 @@
+CREATE INDEX IF NOT EXISTS idx_users_firebase_uid ON users(firebase_uid);
+CREATE INDEX IF NOT EXISTS idx_users_rating ON users(rating DESC);
+CREATE INDEX IF NOT EXISTS idx_problems_difficulty ON problems(difficulty);
+CREATE INDEX IF NOT EXISTS idx_problems_slug ON problems(slug);
+CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_problem_id ON submissions(problem_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_contest_id ON submissions(contest_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_submitted_at ON submissions(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
+CREATE INDEX IF NOT EXISTS idx_contest_participants_rank ON contest_participants(contest_id, score DESC, penalty ASC);
+CREATE INDEX IF NOT EXISTS idx_test_cases_problem_id ON test_cases(problem_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_contest_id ON ratings(contest_id);
+CREATE INDEX IF NOT EXISTS idx_topic_deps ON topic_dependencies(topic_id, prerequisite_id);
