@@ -6,8 +6,8 @@ const submitCode = async (sourceCode, languageId, stdin, expectedOutput) => {
     const response = await axios.post(`${JUDGE0_API}/submissions?wait=true`, {
         source_code: sourceCode,
         language_id: languageId,
-        stdin: stdin,
-        expected_output: expectedOutput
+        stdin: stdin.replace(/\\n/g, '\n'),
+        expected_output: expectedOutput.replace(/\\n/g, '\n')
     });
 
     return response.data;

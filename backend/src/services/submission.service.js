@@ -1,5 +1,24 @@
 const { submitCode } = require('./judge0.service');
 
+const mapVerdict = (judge0Status) => {
+    const mapping = {
+        'Accepted': 'Accepted',
+        'Wrong Answer': 'Wrong Answer',
+        'Time Limit Exceeded': 'Time Limit Exceeded',
+        'Memory Limit Exceeded': 'Memory Limit Exceeded',
+        'Compilation Error': 'Compilation Error',
+        'Compile Error': 'Compilation Error',
+        'Runtime Error': 'Runtime Error',
+        'Runtime Error (SIGSEGV)': 'Runtime Error',
+        'Runtime Error (SIGFPE)': 'Runtime Error',
+        'Runtime Error (SIGABRT)': 'Runtime Error',
+        'Runtime Error (NZEC)': 'Runtime Error',
+        'Internal Error': 'Runtime Error',
+        'Exec Format Error': 'Runtime Error'
+    };
+    return mapping[judge0Status] || 'Runtime Error';
+};
+
 const processSubmission = async (sourceCode, languageId, testCases) => {
     const results = [];
 
@@ -30,7 +49,7 @@ const processSubmission = async (sourceCode, languageId, testCases) => {
     const allPassed = results.every(r => r.status.id === 3);
 
     return {
-        verdict: allPassed ? 'Accepted' : results[results.length - 1].status.description,
+        verdict: mapVerdict(allPassed ? 'Accepted' : results[results.length - 1].status.description),
         results
     };
 };

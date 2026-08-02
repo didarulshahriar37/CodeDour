@@ -10,10 +10,10 @@ app.use(express.json());
 // app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/problems', require('./routes/problem.routes'));
-// app.use('/api/submissions', require('./routes/submission.routes'));
+app.use('/api/submissions', require('./routes/submission.routes'));
 // app.use('/api/contests', require('./routes/contest.routes'));
-// app.use('/api/leaderboard', require('./routes/leaderboard.routes'));
-// app.use('/api/achievements', require('./routes/achievement.routes'));
+app.use('/api/leaderboard', require('./routes/leaderboard.routes'));
+app.use('/api/achievements', require('./routes/achievement.routes'));
 app.use('/api/tags', require('./routes/tag.routes'));
 
 app.get('/health', (req, res) => {
