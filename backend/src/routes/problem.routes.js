@@ -5,6 +5,6 @@ const { getAllProblems, getProblemById, createProblem } = require('../controller
 
 router.get('/', getAllProblems);
 router.get('/:id', getProblemById);
-router.get('/', verifyToken, createProblem);
+router.post('/', verifyToken, createProblem);
 
 module.exports = router;
