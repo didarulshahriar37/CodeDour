@@ -13,8 +13,20 @@ const submitSolution = async (req, res, next) => {
 
         console.log('Inserting submission with status: Pending');
 
+        const userResult = await pool.query(
+            `SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]
+        );
+
+        if(userResult.rows.length === 0){
+            return res.status(401).json({
+                error: 'User not found. Please Sign in first to continue.'
+            });
+        }
+
+        const userId = userResult.rows[0].user_id;
+
         const submission = await pool.query(
-            `INSERT INTO submissions (user_id, problem_id, contest_id, language, language_id, code, status) VALUES ($1, $2, $3, $4, $5, $6, 'Pending') RETURNING submission_id, user_id, problem_id, language, status, submitted_at`, [req.body.user_id || 1, problem_id, contest_id || null, language, language_id, code]
+            `INSERT INTO submissions (user_id, problem_id, contest_id, language, language_id, code, status) VALUES ($1, $2, $3, $4, $5, $6, 'Pending') RETURNING submission_id, user_id, problem_id, language, status, submitted_at`, [userId, problem_id, contest_id || null, language, language_id, code]
         );
 
         const submissionId = submission.rows[0].submission_id;
