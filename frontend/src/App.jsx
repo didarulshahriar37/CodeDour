@@ -1,31 +1,60 @@
-import "./App.css";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+ 
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import Layout from "./layouts/Layout";
+import LandingPage from "./pages/Home";
 import Problems from "./pages/Problems";
+import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
-
-function App() {
+import ContestDetail from "./pages/ContestDetail";
+import Submissions from "./pages/Submissions";
+ 
+// TODO: build these, then swap in for the placeholders below
+// import Login from "./pages/Login";
+// import Register from "./pages/Register";
+// import Profile from "./pages/Profile";
+// import Leaderboard from "./pages/Leaderboard";
+ 
+function ComingSoon({ label }) {
   return (
-    <BrowserRouter>
-      <nav className="flex gap-6 p-5 bg-slate-900 text-white">
-        <Link to="/problems">
-          Problems
-        </Link>
-
-        <Link to="/contests">
-          Contests
-        </Link>
-      </nav>
-
-      <Routes>
-        <Route path="/" element={<Problems />} />
-
-        <Route path="/problems" element={<Problems />} />
-
-        <Route path="/contests" element={<Contests />} />
-      </Routes>
-    </BrowserRouter>
+    <div className="flex min-h-[60vh] items-center justify-center bg-slate-950 text-slate-500">
+      {label} — coming soon
+    </div>
   );
 }
-
-export default App;
+ 
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Routes that share the main Navbar */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/problems" element={<Problems />} />
+            <Route path="/contests" element={<Contests />} />
+ 
+            {/* TODO: replace with real pages as they're built */}
+            <Route path="/login" element={<ComingSoon label="Login" />} />
+            <Route path="/register" element={<ComingSoon label="Register" />} />
+            <Route
+              path="/leaderboard"
+              element={<ComingSoon label="Leaderboard" />}
+            />
+            <Route path="/submissions" element={<Submissions />} />
+ 
+            {/* Signed-in only */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ComingSoon label="Profile" />} />
+            </Route>
+          </Route>
+ 
+          {/* Routes that render full-screen without the main Navbar */}
+          <Route path="/problems/:id" element={<ProblemDetail />} />
+          <Route path="/contests/:id" element={<ContestDetail />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
