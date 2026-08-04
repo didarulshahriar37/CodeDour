@@ -1,4 +1,7 @@
-import { Code2, Zap, ArrowRight, Terminal, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
+import { Code2, Zap, ArrowRight, Terminal, CheckCircle2, LogOut, User, LayoutDashboard, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 const NAV_LINKS = [
   { label: "Problemset", to: "/problems" },
@@ -7,42 +10,129 @@ const NAV_LINKS = [
 ];
 
 function LandingPage() {
+  const { currentUser, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  async function handleLogout() {
+    try {
+      await logout();
+      setDropdownOpen(false);
+    } catch (error) {
+      console.error("Failed to log out:", error);
+    }
+  }
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
       {/* ================= Navbar ================= */}
       <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
               <Code2 className="h-5 w-5 text-white" />
             </span>
             <span className="text-lg font-semibold tracking-tight">
               Code<span className="text-indigo-400">Dour</span>
             </span>
-          </a>
+          </Link>
 
           {/* Links */}
           <div className="flex items-center gap-8">
             {NAV_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                href="#" /* TODO: <Link to={link.to}> */
+                to={link.to}
                 className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
-          {/* Auth buttons */}
+          {/* Auth section */}
           <div className="flex items-center gap-3">
-            <a
-              href="#" /* TODO: <Link to="/login"> */
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
-            >
-              Sign in
-            </a>
+            {currentUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-slate-800"
+                >
+                  {currentUser.photoURL && (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName}
+                      className="h-8 w-8 rounded-full border border-slate-700"
+                    />
+                  )}
+                  <span className="text-sm font-medium text-slate-300">
+                    {currentUser.displayName || currentUser.email}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <>
+                    {/* Backdrop to close dropdown when clicking outside */}
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setDropdownOpen(false)}
+                    />
+                    
+                    {/* Dropdown content */}
+                    <div className="absolute right-0 z-20 mt-2 w-56 rounded-lg border border-slate-800 bg-slate-900 py-2 shadow-xl">
+                      {/* User info header */}
+                      <div className="border-b border-slate-800 px-4 py-3">
+                        <p className="text-sm font-medium text-slate-200">
+                          {currentUser.displayName || 'User'}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {currentUser.email}
+                        </p>
+                      </div>
+
+                      {/* Menu items */}
+                      <div className="py-1">
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </Link>
+                        <Link
+                          to="/profile"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                        >
+                          <User className="h-4 w-4" />
+                          My Profile
+                        </Link>
+                        
+                        {/* Divider */}
+                        <div className="my-1 border-t border-slate-800" />
+                        
+                        <button
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-slate-800 hover:text-red-300"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </nav>
       </header>
@@ -71,19 +161,19 @@ function LandingPage() {
               Track your progress, compete with peers, and become a better programmer through challenging problems and real-time contests.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <a
-                href="#" /* TODO: <Link to="/problems"> */
+              <Link
+                to="/problems"
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-colors hover:bg-indigo-400"
               >
                 Start solving
                 <ArrowRight className="h-4 w-4" />
-              </a>
-              <a
-                href="#" /* TODO: <Link to="/contests"> */
+              </Link>
+              <Link
+                to="/contests"
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
               >
                 Browse contests
-              </a>
+              </Link>
             </div>
           </div>
 
