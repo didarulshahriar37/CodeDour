@@ -14,6 +14,10 @@ import api from "./api";
  * matching profile row in Postgres (users table) via the backend.
  * If the backend call fails, the Firebase user still exists — caller
  * should surface that so the user can retry profile creation/login.
+ *
+ * NOTE: /api/auth is entirely commented out in app.js right now, so this
+ * POST will 404 until your friend uncomments that line and the route file
+ * is wired up.
  */
 async function register({ email, password, username }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -58,30 +62,47 @@ function getCurrentFirebaseUser() {
 }
  
 // ---- Backend-backed profile data (user.routes.js / user.controller.js) ----
+//
+// NOTE: as of now, /api/users only exposes GET /:id, /:id/stats, /:id/submissions
+// (routes for GET /me and PUT /me exist in the file but are commented out,
+// waiting on verifyToken/authMiddleware). getProfile()/updateProfile() below
+// call an endpoint that doesn't exist yet — swap the TODO back in once your
+// friend uncomments those two lines in user.routes.js.
  
+// TODO: not live yet — backend's GET /users/me is commented out
 async function getProfile() {
   const { data } = await api.get("/users/me");
   return data;
 }
  
+// TODO: not live yet — no PUT route exists on /api/users at all yet
 async function updateProfile(updates) {
   const { data } = await api.put("/users/me", updates);
   return data;
 }
  
-async function getUserByUsername(username) {
-  const { data } = await api.get(`/users/${username}`);
+// Live now: GET /api/users/:id
+async function getUserById(id) {
+  const { data } = await api.get(`/users/${id}`);
   return data;
 }
  
-// Backed by database/functions/get_user_statistics.sql
-async function getUserStats(username) {
-  const { data } = await api.get(`/users/${username}/stats`);
+// Live now: GET /api/users/:id/stats — backed by get_user_statistics.sql
+async function getUserStats(id) {
+  const { data } = await api.get(`/users/${id}/stats`);
   return data;
 }
  
-async function getUserAchievements(username) {
-  const { data } = await api.get(`/users/${username}/achievements`);
+// Live now: GET /api/users/:id/submissions
+async function getUserSubmissions(id) {
+  const { data } = await api.get(`/users/${id}/submissions`);
+  return data;
+}
+ 
+// TODO: not live yet — lives on /api/achievements, which is still commented
+// out in app.js (achievement.routes.js has GET /achievements/:id)
+async function getUserAchievements(id) {
+  const { data } = await api.get(`/achievements/${id}`);
   return data;
 }
  
@@ -95,8 +116,9 @@ const authService = {
   getCurrentFirebaseUser,
   getProfile,
   updateProfile,
-  getUserByUsername,
+  getUserById,
   getUserStats,
+  getUserSubmissions,
   getUserAchievements,
 };
  
@@ -111,7 +133,8 @@ export {
   getCurrentFirebaseUser,
   getProfile,
   updateProfile,
-  getUserByUsername,
+  getUserById,
   getUserStats,
+  getUserSubmissions,
   getUserAchievements,
 };
