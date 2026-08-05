@@ -1,22 +1,28 @@
-const axios = require('axios');
-
-const JUDGE0_API = process.env.JUDGE0_API_URL;
+const JUDGE0_API = process.env.JUDGE0_API_URL || 'https://ce.judge0.com';
 
 const submitCode = async (sourceCode, languageId, stdin, expectedOutput) => {
-    const response = await axios.post(`${JUDGE0_API}/submissions?wait=true`, {
-        source_code: sourceCode,
-        language_id: languageId,
-        stdin: stdin.replace(/\\n/g, '\n'),
-        expected_output: expectedOutput.replace(/\\n/g, '\n')
+    const res = await fetch(`${JUDGE0_API}/submissions?wait=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            source_code: sourceCode,
+            language_id: languageId,
+            stdin: (stdin || '').replace(/\\n/g, '\n'),
+            expected_output: (expectedOutput || '').replace(/\\n/g, '\n')
+        })
     });
-
-    return response.data;
+    if (!res.ok) {
+        throw new Error(`Judge0 API error: ${res.statusText}`);
+    }
+    return await res.json();
 };
 
 const getSubmissionResult = async (token) => {
-    const response = await axios.get(`${JUDGE0_API}/submissions/${token}?fields=status,stdout,stderr,compile_output,time,memory`);
+    const res = await fetch(`${JUDGE0_API}/submissions/${token}?fields=status,stdout,stderr,compile_output,time,memory`);
+    if (!res.ok) {
+        throw new Error(`Judge0 API error: ${res.statusText}`);
+    }
+    return await res.json();
+};
 
-    return response.data;
-}
-
-module.exports = {submitCode, getSubmissionResult};
+module.exports = { submitCode, getSubmissionResult };
