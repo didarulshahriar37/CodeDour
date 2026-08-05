@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation, Navigate } from "react-router-dom";
 import {
   Clock3,
   Database,
@@ -197,7 +197,12 @@ export default function ProblemDetail() {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const { refreshProfile } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshProfile } = useAuth();
+  const location = useLocation();
+
+  if (!authLoading && !isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   const handleRun = async () => {
     setRunState("running");

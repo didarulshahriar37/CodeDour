@@ -9,8 +9,10 @@ import {
   Loader2,
 } from "lucide-react";
 import problemService from "../services/problemService";
+import { useAuth } from "../context/AuthContext";
 
 export default function Problems() {
+  const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("All");
 
@@ -180,7 +182,8 @@ export default function Problems() {
 
                     <td>
                       <Link
-                        to={`/problems/${problem.problem_id || problem.id}`}
+                        to={isAuthenticated ? `/problems/${problem.problem_id || problem.id}` : "/login"}
+                        state={!isAuthenticated ? { from: { pathname: `/problems/${problem.problem_id || problem.id}` } } : undefined}
                         className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400 w-fit"
                       >
                         Solve
