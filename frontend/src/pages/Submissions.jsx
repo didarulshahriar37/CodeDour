@@ -10,6 +10,9 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  X,
+  Copy,
+  Check,
 } from "lucide-react";
 import submissionService from "../services/submissionService";
  
@@ -34,12 +37,19 @@ const LANGUAGE_OPTIONS = [
 ];
  
 const VERDICT_STYLE = {
+  Accepted: { label: "Accepted", icon: CheckCircle2, className: "text-emerald-400" },
   accepted: { label: "Accepted", icon: CheckCircle2, className: "text-emerald-400" },
+  "Wrong Answer": { label: "Wrong Answer", icon: XCircle, className: "text-red-400" },
   wrong_answer: { label: "Wrong Answer", icon: XCircle, className: "text-red-400" },
+  "Time Limit Exceeded": { label: "Time Limit Exceeded", icon: Clock3, className: "text-yellow-400" },
   tle: { label: "Time Limit Exceeded", icon: Clock3, className: "text-yellow-400" },
+  "Memory Limit Exceeded": { label: "Memory Limit Exceeded", icon: AlertTriangle, className: "text-yellow-400" },
   mle: { label: "Memory Limit Exceeded", icon: AlertTriangle, className: "text-yellow-400" },
+  "Runtime Error": { label: "Runtime Error", icon: Ban, className: "text-orange-400" },
   runtime_error: { label: "Runtime Error", icon: Ban, className: "text-orange-400" },
+  "Compilation Error": { label: "Compile Error", icon: Ban, className: "text-orange-400" },
   compile_error: { label: "Compile Error", icon: Ban, className: "text-orange-400" },
+  Pending: { label: "In Queue", icon: Loader2, className: "text-slate-400" },
   pending: { label: "In Queue", icon: Loader2, className: "text-slate-400" },
   judging: { label: "Judging", icon: Loader2, className: "text-slate-400" },
 };
@@ -53,7 +63,14 @@ export default function Submissions() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [codeCopied, setCodeCopied] = useState(false);
  
+  useEffect(() => {
+    document.title = "My Submissions | CodeDour";
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
  
@@ -68,8 +85,8 @@ export default function Submissions() {
           pageSize: PAGE_SIZE,
         });
         if (cancelled) return;
-        setSubmissions(data.items);
-        setTotal(data.total);
+        setSubmissions(data.items || data.submissions || []);
+        setTotal(data.total || 0);
       } catch (err) {
         if (!cancelled) setError(err.message || "Couldn't load submissions.");
       } finally {
@@ -82,6 +99,13 @@ export default function Submissions() {
       cancelled = true;
     };
   }, [status, language, page]);
+
+  const handleCopyCode = (codeText) => {
+    if (!codeText) return;
+    navigator.clipboard?.writeText(codeText);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 1500);
+  };
  
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
  
@@ -188,13 +212,17 @@ export default function Submissions() {
                       className="border-t border-slate-800 hover:bg-slate-900/60 transition"
                     >
                       <td className="px-6 py-5">
-                        <span className={`flex items-center gap-1.5 text-sm font-medium ${verdict.className}`}>
+                        <button
+                          onClick={() => setSelectedSubmission(sub)}
+                          className={`flex items-center gap-1.5 text-sm font-medium ${verdict.className} hover:underline cursor-pointer text-left`}
+                          title="Click to view submitted code"
+                        >
                           <VerdictIcon
                             size={16}
                             className={sub.status === "pending" || sub.status === "judging" ? "animate-spin" : ""}
                           />
                           {verdict.label}
-                        </span>
+                        </button>
                       </td>
                       <td className="font-medium">
                         <Link
@@ -207,7 +235,9 @@ export default function Submissions() {
                       <td className="text-slate-400">{sub.language}</td>
                       <td className="text-slate-400">{sub.time ?? "—"}</td>
                       <td className="text-slate-400">{sub.memory ?? "—"}</td>
-                      <td className="text-slate-400">{sub.submittedAt}</td>
+                      <td className="text-slate-400">
+                        {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : "—"}
+                      </td>
                     </tr>
                   );
                 })}
@@ -242,6 +272,77 @@ export default function Submissions() {
           </div>
         )}
       </div>
+
+      {/* Code Modal */}
+      {selectedSubmission && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedSubmission(null)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">
+                  Submission #{selectedSubmission.id} - {selectedSubmission.problemTitle}
+                </h3>
+                <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                  <span className="font-semibold text-indigo-400">{selectedSubmission.language}</span>
+                  <span>·</span>
+                  <span>{selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString() : "—"}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Submitted Code
+                </span>
+                {selectedSubmission.code && (
+                  <button
+                    onClick={() => handleCopyCode(selectedSubmission.code)}
+                    className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    {codeCopied ? <Check size={14} /> : <Copy size={14} />}
+                    {codeCopied ? "Copied" : "Copy Code"}
+                  </button>
+                )}
+              </div>
+
+              {selectedSubmission.code ? (
+                <pre className="max-h-96 overflow-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200">
+                  <code>{selectedSubmission.code}</code>
+                </pre>
+              ) : (
+                <div className="py-8 text-center text-slate-500">
+                  No code snippet recorded for this submission.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end border-t border-slate-800 px-6 py-3">
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,14 +27,13 @@ const googleProvider = new GoogleAuthProvider();
 async function register({ email, password, username, fullName }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   
-  // Update Firebase profile with display name
   if (fullName && credential.user) {
     await updateFirebaseProfile(credential.user, {
       displayName: fullName
     });
+    await credential.user.getIdToken(true);
   }
- 
-  // Sync user to backend database
+
   try {
     const { data } = await api.post("/auth/sync");
     return { firebaseUser: credential.user, profile: data.user };

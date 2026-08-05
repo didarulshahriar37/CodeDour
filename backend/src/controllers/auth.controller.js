@@ -3,7 +3,7 @@ const pool = require('../config/db');
 const syncUser = async(req, res, next) => {
     try{
         const {uid, email, name, picture} = req.user;
-        const {fullName} = req.body;
+        const fullName = req.body?.fullName;
 
         // Use fullName from request body, fallback to Firebase name, then email
         const displayName = fullName || name || email.split('@')[0];
@@ -31,7 +31,7 @@ const syncUser = async(req, res, next) => {
         }
 
         const result = await pool.query(
-            `INSERT INTO users (firebase_uid, username, email, display_name, avatar_url) VALUES ($1, $2, $3, $4, $5) RETURNING *`,[uid, username, email, displayName, avatar]
+            `INSERT INTO users (firebase_uid, username, email, display_name, avatar_url, rating, max_rating) VALUES ($1, $2, $3, $4, $5, 0, 0) RETURNING *`,[uid, username, email, displayName, avatar]
         );
 
         res.status(200).json({

@@ -85,4 +85,95 @@ const getSubmissionById = async (req, res, next) => {
     }
 };
 
-module.exports = { submitSolution, getSubmissionById };
+const getAllSubmissions = async (req, res, next) => {
+    try {
+        const { page = 1, limit = 20, pageSize, status, language, problem_id, problemId } = req.query;
+        const actualLimit = parseInt(pageSize || limit, 10);
+        const offset = (parseInt(page, 10) - 1) * actualLimit;
+        const targetProblemId = (problem_id || problemId) ? parseInt(problem_id || problemId, 10) : null;
+
+        if (!req.user?.uid) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const userResult = await pool.query(
+            `SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(200).json({
+                items: [],
+                submissions: [],
+                total: 0,
+                page: Number(page),
+                pageSize: actualLimit
+            });
+        }
+
+        const userId = userResult.rows[0].user_id;
+
+        const statusMap = {
+            'accepted': 'Accepted',
+            'wrong_answer': 'Wrong Answer',
+            'tle': 'Time Limit Exceeded',
+            'mle': 'Memory Limit Exceeded',
+            'runtime_error': 'Runtime Error',
+            'compile_error': 'Compilation Error'
+        };
+
+        const dbStatus = (status && status !== 'all') ? (statusMap[status.toLowerCase()] || status) : null;
+        const langFilter = (language && language !== 'all') ? language : null;
+
+        const query = `
+            SELECT 
+                s.submission_id AS id,
+                s.submission_id,
+                s.user_id,
+                s.problem_id AS "problemId",
+                p.title AS "problemTitle",
+                p.slug AS "problemSlug",
+                s.language,
+                s.code,
+                s.status,
+                s.execution_time AS time,
+                s.memory_used AS memory,
+                s.submitted_at AS "submittedAt"
+            FROM submissions s
+            JOIN problems p ON s.problem_id = p.problem_id
+            WHERE s.user_id = $1
+              AND ($2::text IS NULL OR s.status = $2)
+              AND ($3::text IS NULL OR s.language ILIKE '%' || $3 || '%')
+              AND ($4::int IS NULL OR s.problem_id = $4)
+            ORDER BY s.submitted_at DESC
+            LIMIT $5 OFFSET $6
+        `;
+
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM submissions s
+            WHERE s.user_id = $1
+              AND ($2::text IS NULL OR s.status = $2)
+              AND ($3::text IS NULL OR s.language ILIKE '%' || $3 || '%')
+              AND ($4::int IS NULL OR s.problem_id = $4)
+        `;
+
+        const [result, countResult] = await Promise.all([
+            pool.query(query, [userId, dbStatus, langFilter, targetProblemId, actualLimit, offset]),
+            pool.query(countQuery, [userId, dbStatus, langFilter, targetProblemId])
+        ]);
+
+        const total = parseInt(countResult.rows[0]?.total || 0, 10);
+
+        res.status(200).json({
+            items: result.rows,
+            submissions: result.rows,
+            total,
+            page: Number(page),
+            pageSize: actualLimit
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { submitSolution, getSubmissionById, getAllSubmissions };

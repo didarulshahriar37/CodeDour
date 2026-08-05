@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Code2, Mail, Lock, User, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -7,6 +7,10 @@ import GoogleIcon from "../components/common/GoogleIcon";
 export default function Register() {
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Create Account | CodeDour";
+  }, []);
  
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  ChevronLeft,
   Clock3,
   Database,
   CheckCircle2,
@@ -9,70 +8,97 @@ import {
   Loader2,
   Copy,
   Check,
-  Play,
   Send,
   Terminal,
   FileText,
   History,
+  X,
 } from "lucide-react";
+import problemService from "../services/problemService";
 import submissionService from "../services/submissionService";
- 
-// TODO: replace with problemService.getProblemById(problemId) in a useEffect —
-// left as static mock data for now since fetching/loading/error state for the
-// problem itself is a separate piece of work from the run/submit wiring below.
-const problem = {
-  id: 3,
-  title: "Longest Increasing Subsequence",
-  difficulty: "Medium",
-  category: "Dynamic Programming",
-  acceptance: "61%",
-  timeLimit: "1.0s",
-  memoryLimit: "256 MB",
-  tags: ["dp", "binary-search", "arrays"],
-  statement: `Given an integer array nums, return the length of the longest strictly increasing subsequence.
- 
-A subsequence is derived from the array by deleting some or no elements without changing the order of the remaining elements.`,
-  inputFormat: `The first line contains a single integer n (1 \u2264 n \u2264 2500) \u2014 the size of the array.
-The second line contains n integers nums[i] (-10^4 \u2264 nums[i] \u2264 10^4).`,
-  outputFormat: `Print a single integer \u2014 the length of the longest strictly increasing subsequence.`,
-  examples: [
-    {
-      input: "8\n10 9 2 5 3 7 101 18",
-      output: "4",
-      note: "The subsequence is [2, 3, 7, 101], length 4.",
-    },
-    {
-      input: "1\n0",
-      output: "1",
-      note: undefined,
-    },
-  ],
-  constraintsNote: "Can you devise an O(n log n) solution?",
-};
- 
+import { useAuth } from "../context/AuthContext";
+
 const LANGUAGES = [
   {
+    id: "c",
+    label: "C (GCC)",
+    judge0Id: 50,
+    starter: `#include <stdio.h>\n\nint main() {\n    // your code here\n    return 0;\n}\n`,
+  },
+  {
     id: "cpp",
-    label: "C++17",
+    label: "C++ 17",
+    judge0Id: 54,
     starter: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // your code here\n    return 0;\n}\n`,
   },
   {
     id: "python",
     label: "Python 3",
-    starter: `def solve():\n    # your code here\n    pass\n\nsolve()\n`,
+    judge0Id: 71,
+    starter: `import sys\n\ndef solve():\n    # your code here\n    pass\n\nif __name__ == '__main__':\n    solve()\n`,
   },
   {
     id: "java",
     label: "Java 17",
-    starter: `public class Main {\n    public static void main(String[] args) {\n        // your code here\n    }\n}\n`,
+    judge0Id: 62,
+    starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // your code here\n    }\n}\n`,
   },
   {
     id: "javascript",
-    label: "JavaScript",
-    starter: `// your code here\n`,
+    label: "JavaScript (Node.js)",
+    judge0Id: 63,
+    starter: `const fs = require('fs');\n// your code here\n`,
+  },
+  {
+    id: "typescript",
+    label: "TypeScript",
+    judge0Id: 74,
+    starter: `import * as fs from 'fs';\n// your code here\n`,
+  },
+  {
+    id: "csharp",
+    label: "C#",
+    judge0Id: 51,
+    starter: `using System;\n\nclass Program {\n    static void Main() {\n        // your code here\n    }\n}\n`,
+  },
+  {
+    id: "go",
+    label: "Go",
+    judge0Id: 60,
+    starter: `package main\nimport "fmt"\n\nfunc main() {\n    // your code here\n}\n`,
+  },
+  {
+    id: "rust",
+    label: "Rust",
+    judge0Id: 73,
+    starter: `use std::io;\n\nfn main() {\n    // your code here\n}\n`,
+  },
+  {
+    id: "php",
+    label: "PHP",
+    judge0Id: 68,
+    starter: `<?php\n// your code here\n`,
+  },
+  {
+    id: "ruby",
+    label: "Ruby",
+    judge0Id: 72,
+    starter: `# your code here\n`,
+  },
+  {
+    id: "kotlin",
+    label: "Kotlin",
+    judge0Id: 78,
+    starter: `# your code here\n`,
+  },
+  {
+    id: "swift",
+    label: "Swift",
+    judge0Id: 83,
+    starter: `import Foundation\n// your code here\n`,
   },
 ];
- 
+
 const difficultyColor = (difficulty) => {
   switch (difficulty) {
     case "Easy":
@@ -85,9 +111,14 @@ const difficultyColor = (difficulty) => {
       return "text-slate-400 bg-slate-400/10 border-slate-400/30";
   }
 };
- 
+
 export default function ProblemDetail() {
   const { id: problemId } = useParams();
+  const [problem, setProblem] = useState(null);
+  const [sampleTestCases, setSampleTestCases] = useState([]);
+  const [loadingProblem, setLoadingProblem] = useState(true);
+  const [problemError, setProblemError] = useState(null);
+
   const [activeTab, setActiveTab] = useState("description");
   const [languageId, setLanguageId] = useState("cpp");
   const [codeByLanguage, setCodeByLanguage] = useState(() =>
@@ -97,104 +128,132 @@ export default function ProblemDetail() {
   const [copied, setCopied] = useState(false);
   const [runState, setRunState] = useState("idle"); // idle | running | passed | failed
   const [verdict, setVerdict] = useState(null);
- 
+
   const language = LANGUAGES.find((l) => l.id === languageId);
   const code = codeByLanguage[languageId];
- 
+
+  const [problemSubmissions, setProblemSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState(null);
+  const [selectedSubmissionCode, setSelectedSubmissionCode] = useState(null);
+
+  const fetchSubmissions = async () => {
+    setLoadingSubmissions(true);
+    setSubmissionsError(null);
+    try {
+      const data = await submissionService.getSubmissions({
+        problemId: problemId,
+      });
+      setProblemSubmissions(data.items || data.submissions || []);
+    } catch (err) {
+      setSubmissionsError(err.message || "Failed to load submissions.");
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchProblem() {
+      setLoadingProblem(true);
+      setProblemError(null);
+      try {
+        const data = await problemService.getProblemById(problemId);
+        if (cancelled) return;
+        setProblem(data.problem);
+        setSampleTestCases(data.sample_test_cases || []);
+        if (data.problem?.title) {
+          document.title = `${data.problem.title} | CodeDour`;
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setProblemError(err.message || "Problem not found");
+        }
+      } finally {
+        if (!cancelled) setLoadingProblem(false);
+      }
+    }
+
+    fetchProblem();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [problemId]);
+
+  useEffect(() => {
+    if (activeTab === "submissions") {
+      fetchSubmissions();
+    }
+  }, [activeTab, problemId]);
+
   const setCode = (value) =>
     setCodeByLanguage((prev) => ({ ...prev, [languageId]: value }));
- 
+
   const handleCopy = () => {
     navigator.clipboard?.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
- 
-  const handleRun = async (mode) => {
+
+  const { refreshProfile } = useAuth();
+
+  const handleRun = async () => {
     setRunState("running");
-    setVerdict({ mode });
- 
+    setVerdict(null);
+
     try {
-      if (mode === "run") {
-        // Sample tests only — synchronous, nothing persisted.
-        const result = await submissionService.runCode({
-          problemId,
-          language: languageId,
-          code,
-        });
- 
-        const passedCount = result.results.filter((r) => r.passed).length;
-        const allPassed = passedCount === result.results.length;
- 
-        setRunState(allPassed ? "passed" : "failed");
-        setVerdict({
-          mode,
-          label: allPassed ? "Accepted" : "Wrong Answer",
-          time: result.time,
-          memory: result.memory,
-          testsPassed: passedCount,
-          totalTests: result.results.length,
-        });
-      } else {
-        // Full judge — queued on the backend, so poll until Judge0 finishes.
-        const queued = await submissionService.submitSolution({
-          problemId,
-          language: languageId,
-          code,
-        });
- 
-        const final = await submissionService.pollSubmission(queued.id);
- 
-        const passed = final.status === "accepted";
-        setRunState(passed ? "passed" : "failed");
-        setVerdict({
-          mode,
-          label: final.statusLabel || (passed ? "Accepted" : "Wrong Answer"),
-          time: final.time,
-          memory: final.memory,
-          testsPassed: final.testsPassed,
-          totalTests: final.totalTests,
-        });
-      }
+      const res = await submissionService.submitSolution({
+        problem_id: problemId,
+        language: language.label,
+        language_id: language.judge0Id,
+        code,
+      });
+
+      const isAccepted = res.verdict === "Accepted";
+      setRunState(isAccepted ? "passed" : "failed");
+      setVerdict({
+        label: res.verdict || "Completed",
+        time: res.execution_time !== undefined ? `${res.execution_time}s` : "—",
+        memory: res.memory_used !== undefined ? `${res.memory_used} KB` : "—",
+        results: res.results || []
+      });
+
+      // Refresh global profile state and submissions list instantly
+      refreshProfile().catch(() => {});
+      fetchSubmissions().catch(() => {});
     } catch (err) {
       setRunState("failed");
       setVerdict({
-        mode,
         label: err.message || "Something went wrong while judging.",
         time: "—",
         memory: "—",
-        testsPassed: 0,
-        totalTests: 1,
       });
     }
   };
- 
+
+  if (loadingProblem) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+        <Loader2 className="animate-spin text-indigo-400" size={32} />
+      </div>
+    );
+  }
+
+  if (problemError || !problem) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white gap-4">
+        <p className="text-xl text-red-400">{problemError || "Problem not found"}</p>
+        <Link to="/problems" className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400">
+          Back to Problems
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Top bar */}
-      <div className="border-b border-slate-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link
-            to="/problems"
-            className="flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-white"
-          >
-            <ChevronLeft size={16} />
-            Back to Problems
-          </Link>
- 
-          <div className="flex items-center gap-3 text-sm text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Clock3 size={15} />
-              {problem.timeLimit}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Database size={15} />
-              {problem.memoryLimit}
-            </span>
-          </div>
-        </div>
-      </div>
- 
       {/* Split layout */}
       <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-2">
         {/* Left: statement */}
@@ -208,12 +267,27 @@ export default function ProblemDetail() {
             >
               {problem.difficulty}
             </span>
+
+            <div className="flex items-center gap-3 text-xs text-slate-400 border-l border-slate-800 pl-3">
+              <span className="flex items-center gap-1">
+                <Clock3 size={14} />
+                {problem.time_limit || 1.0}s
+              </span>
+              <span className="flex items-center gap-1">
+                <Database size={14} />
+                {problem.memory_limit || 256} MB
+              </span>
+            </div>
           </div>
- 
+
           <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500">
-            <span>{problem.acceptance} acceptance</span>
+            <span>
+              {problem.total_submissions > 0
+                ? `${Math.round(((problem.accepted_submissions || 0) / problem.total_submissions) * 100)}%`
+                : "0%"} acceptance
+            </span>
             <div className="flex flex-wrap gap-2">
-              {problem.tags.map((tag) => (
+              {Array.isArray(problem.tags) && problem.tags.map((tag) => (
                 <span
                   key={tag}
                   className="rounded-md bg-slate-900 px-2 py-0.5 text-xs text-slate-400"
@@ -223,7 +297,7 @@ export default function ProblemDetail() {
               ))}
             </div>
           </div>
- 
+
           {/* Tabs */}
           <div className="mt-6 flex gap-6 border-b border-slate-800">
             {[
@@ -244,84 +318,193 @@ export default function ProblemDetail() {
               </button>
             ))}
           </div>
- 
+
           {activeTab === "description" ? (
             <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-300">
-              <p className="whitespace-pre-line">{problem.statement}</p>
- 
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Input
-                </h3>
-                <p className="whitespace-pre-line">{problem.inputFormat}</p>
-              </div>
- 
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Output
-                </h3>
-                <p className="whitespace-pre-line">{problem.outputFormat}</p>
-              </div>
- 
-              {/* Examples */}
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Examples
-                </h3>
- 
-                <div className="flex gap-2">
-                  {problem.examples.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveExample(i)}
-                      className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-                        activeExample === i
-                          ? "bg-indigo-500 text-white"
-                          : "bg-slate-900 text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      Example {i + 1}
-                    </button>
-                  ))}
+              <p className="whitespace-pre-line">{problem.description}</p>
+
+              {problem.input_format && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Input Format
+                  </h3>
+                  <p className="whitespace-pre-line">{problem.input_format}</p>
                 </div>
- 
-                <div className="mt-3 space-y-3">
-                  <div className="rounded-lg border border-slate-800 bg-slate-900">
-                    <div className="border-b border-slate-800 px-4 py-2 text-xs font-medium text-slate-500">
-                      Input
-                    </div>
-                    <pre className="overflow-x-auto p-4 font-mono text-xs text-slate-300">
-                      {problem.examples[activeExample].input}
-                    </pre>
+              )}
+
+              {problem.output_format && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Output Format
+                  </h3>
+                  <p className="whitespace-pre-line">{problem.output_format}</p>
+                </div>
+              )}
+
+              {/* Sample Test Cases */}
+              {sampleTestCases.length > 0 && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Examples
+                  </h3>
+
+                  <div className="flex gap-2">
+                    {sampleTestCases.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveExample(i)}
+                        className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                          activeExample === i
+                            ? "bg-indigo-500 text-white"
+                            : "bg-slate-900 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Example {i + 1}
+                      </button>
+                    ))}
                   </div>
- 
-                  <div className="rounded-lg border border-slate-800 bg-slate-900">
-                    <div className="border-b border-slate-800 px-4 py-2 text-xs font-medium text-slate-500">
-                      Output
+
+                  {sampleTestCases[activeExample] && (
+                    <div className="mt-3 space-y-3">
+                      <div className="rounded-lg border border-slate-800 bg-slate-900">
+                        <div className="border-b border-slate-800 px-4 py-2 text-xs font-medium text-slate-500">
+                          Input
+                        </div>
+                        <pre className="overflow-x-auto p-4 font-mono text-xs text-slate-300">
+                          {sampleTestCases[activeExample].input?.replace(/\\n/g, '\n')}
+                        </pre>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-800 bg-slate-900">
+                        <div className="border-b border-slate-800 px-4 py-2 text-xs font-medium text-slate-500">
+                          Output
+                        </div>
+                        <pre className="overflow-x-auto p-4 font-mono text-xs text-slate-300">
+                          {sampleTestCases[activeExample].expected_output?.replace(/\\n/g, '\n')}
+                        </pre>
+                      </div>
+
+                      {sampleTestCases[activeExample].explanation && (
+                        <p className="text-xs text-slate-500">
+                          {sampleTestCases[activeExample].explanation}
+                        </p>
+                      )}
                     </div>
-                    <pre className="overflow-x-auto p-4 font-mono text-xs text-slate-300">
-                      {problem.examples[activeExample].output}
-                    </pre>
-                  </div>
- 
-                  {problem.examples[activeExample].note && (
-                    <p className="text-xs text-slate-500">
-                      {problem.examples[activeExample].note}
-                    </p>
                   )}
                 </div>
-              </div>
- 
-              <p className="text-slate-400">{problem.constraintsNote}</p>
+              )}
+
+              {problem.constraints && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Constraints
+                  </h3>
+                  <p className="whitespace-pre-line text-slate-400">{problem.constraints}</p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="mt-10 flex flex-col items-center gap-2 text-center text-slate-500">
-              <History size={28} />
-              <p className="text-sm">No submissions yet for this problem.</p>
+            <div className="mt-6 space-y-4">
+              {loadingSubmissions && (
+                <div className="py-12 text-center text-slate-500">
+                  <Loader2 className="mx-auto mb-2 animate-spin" size={20} />
+                  Loading your submissions...
+                </div>
+              )}
+
+              {!loadingSubmissions && submissionsError && (
+                <div className="py-8 text-center text-red-400 text-sm">
+                  {submissionsError}
+                </div>
+              )}
+
+              {!loadingSubmissions && !submissionsError && problemSubmissions.length === 0 && (
+                <div className="mt-10 flex flex-col items-center gap-2 text-center text-slate-500">
+                  <History size={28} />
+                  <p className="text-sm">You haven't submitted any code for this problem yet.</p>
+                </div>
+              )}
+
+              {!loadingSubmissions && !submissionsError && problemSubmissions.length > 0 && (
+                <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-slate-800 bg-slate-900 text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">Language</th>
+                        <th className="px-4 py-3 font-semibold">Time</th>
+                        <th className="px-4 py-3 font-semibold">Memory</th>
+                        <th className="px-4 py-3 font-semibold">Submitted</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {problemSubmissions.map((sub) => {
+                        const isAcc = sub.status === "Accepted";
+                        return (
+                          <tr key={sub.id} className="hover:bg-slate-800/40 transition">
+                            <td className="px-4 py-3 font-medium">
+                              <button
+                                onClick={() => setSelectedSubmissionCode(sub.code)}
+                                className={`flex items-center gap-1.5 hover:underline ${
+                                  isAcc ? "text-emerald-400" : "text-red-400"
+                                }`}
+                                title="Click to view submitted code"
+                              >
+                                {isAcc ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                {sub.status}
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 text-slate-300">{sub.language}</td>
+                            <td className="px-4 py-3 text-slate-400">{sub.time ? `${sub.time}s` : "—"}</td>
+                            <td className="px-4 py-3 text-slate-400">{sub.memory ? `${sub.memory} KB` : "—"}</td>
+                            <td className="px-4 py-3 text-slate-400">
+                              {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
+
+          {selectedSubmissionCode && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              onClick={() => setSelectedSubmissionCode(null)}
+            >
+              <div
+                className="w-full max-w-2xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+                  <h3 className="text-base font-bold text-white">Submitted Code</h3>
+                  <button
+                    onClick={() => setSelectedSubmissionCode(null)}
+                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="p-6">
+                  <pre className="max-h-96 overflow-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-200">
+                    <code>{selectedSubmissionCode}</code>
+                  </pre>
+                </div>
+                <div className="flex justify-end border-t border-slate-800 px-6 py-3">
+                  <button
+                    onClick={() => setSelectedSubmissionCode(null)}
+                    className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>            </div>
+          )}
         </div>
- 
+
         {/* Right: editor */}
         <div className="flex min-w-0 flex-col">
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80">
@@ -332,7 +515,7 @@ export default function ProblemDetail() {
                 <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
                 <span className="h-3 w-3 rounded-full bg-green-500/80" />
               </div>
- 
+
               <select
                 value={languageId}
                 onChange={(e) => setLanguageId(e.target.value)}
@@ -344,7 +527,7 @@ export default function ProblemDetail() {
                   </option>
                 ))}
               </select>
- 
+
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white"
@@ -353,7 +536,7 @@ export default function ProblemDetail() {
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
- 
+
             {/* code area */}
             <textarea
               value={code}
@@ -361,52 +544,41 @@ export default function ProblemDetail() {
               spellCheck={false}
               className="h-80 w-full resize-none bg-transparent p-5 font-mono text-sm leading-relaxed text-slate-200 outline-none"
             />
- 
+
             {/* actions */}
             <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-3">
               <button
-                onClick={() => handleRun("run")}
-                disabled={runState === "running"}
-                className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:border-slate-500 hover:bg-slate-800/50 disabled:opacity-50"
-              >
-                <Play size={15} />
-                Run
-              </button>
-              <button
-                onClick={() => handleRun("submit")}
+                onClick={handleRun}
                 disabled={runState === "running"}
                 className="flex items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2 text-sm font-semibold hover:bg-indigo-400 disabled:opacity-50"
               >
                 <Send size={15} />
-                Submit
+                Submit Code
               </button>
             </div>
           </div>
- 
+
           {/* verdict console */}
           <div className="mt-4 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80">
             <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3 text-xs font-medium text-slate-500">
               <Terminal size={14} />
               Result
             </div>
- 
+
             <div className="p-5">
               {runState === "idle" && (
                 <p className="text-sm text-slate-500">
-                  Run your code against the sample tests, or submit to judge
-                  against the full test suite.
+                  Submit your code to judge against test cases on Judge0.
                 </p>
               )}
- 
+
               {runState === "running" && (
                 <div className="flex items-center gap-2 text-sm text-slate-400">
                   <Loader2 size={16} className="animate-spin" />
-                  {verdict?.mode === "submit"
-                    ? "Judging submission..."
-                    : "Running sample tests..."}
+                  Judging submission...
                 </div>
               )}
- 
+
               {(runState === "passed" || runState === "failed") && verdict && (
                 <div>
                   <div className="flex items-center gap-2">
@@ -425,31 +597,8 @@ export default function ProblemDetail() {
                       {verdict.label}
                     </span>
                     <span className="ml-auto text-xs text-slate-500">
-                      {verdict.time} \u00b7 {verdict.memory}
+                      {verdict.time} · {verdict.memory}
                     </span>
-                  </div>
- 
-                  <div className="mt-4">
-                    <div className="mb-1.5 flex justify-between text-xs text-slate-500">
-                      <span>Test cases</span>
-                      <span>
-                        {verdict.testsPassed}/{verdict.totalTests}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className={`h-full rounded-full ${
-                          runState === "passed"
-                            ? "bg-emerald-400"
-                            : "bg-red-400"
-                        }`}
-                        style={{
-                          width: `${
-                            (verdict.testsPassed / verdict.totalTests) * 100
-                          }%`,
-                        }}
-                      />
-                    </div>
                   </div>
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Code2, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +9,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from?.pathname || "/";
+
+  useEffect(() => {
+    document.title = "Sign In | CodeDour";
+  }, []);
  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

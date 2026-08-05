@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { User, Mail, Calendar, Award, Code2, ArrowLeft } from "lucide-react";
+import { User, Mail, Calendar, Award, Code2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Profile() {
@@ -10,7 +10,7 @@ export default function Profile() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        if (firebaseUser && !profile) {
+        if (firebaseUser) {
           await refreshProfile();
         }
       } catch (error) {
@@ -21,7 +21,17 @@ export default function Profile() {
     };
 
     loadProfile();
-  }, [firebaseUser, profile, refreshProfile]);
+  }, [firebaseUser]);
+
+  const username = profile?.username || firebaseUser?.email?.split('@')[0];
+
+  useEffect(() => {
+    if (username) {
+      document.title = `${username} - Profile | CodeDour`;
+    } else {
+      document.title = "My Profile | CodeDour";
+    }
+  }, [username]);
 
   if (loading) {
     return (
@@ -34,27 +44,14 @@ export default function Profile() {
   const displayName = firebaseUser?.displayName || profile?.display_name || "User";
   const email = firebaseUser?.email || profile?.email || "";
   const photoURL = firebaseUser?.photoURL || profile?.avatar_url || "";
-  const username = profile?.username || email.split('@')[0];
-  const rating = profile?.rating || 1500;
   const problemsSolved = profile?.problems_solved || 0;
   const totalSubmissions = profile?.total_submissions || 0;
+  const rating = profile?.rating ?? 0;
+  const maxRating = profile?.max_rating ?? rating;
   const createdAt = profile?.created_at || firebaseUser?.metadata?.creationTime;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Header */}
-      <div className="border-b border-slate-800">
-        <div className="mx-auto max-w-5xl px-6 py-6">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Link>
-        </div>
-      </div>
-
       {/* Profile Content */}
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Profile Header Card */}
@@ -95,15 +92,6 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-
-              {profile?.role && profile.role !== 'user' && (
-                <div className="mt-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-400 border border-indigo-500/30">
-                    <Award className="h-3.5 w-3.5" />
-                    {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -124,17 +112,22 @@ export default function Profile() {
           </div>
 
           {/* Total Submissions */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
+          <Link
+            to="/submissions"
+            className="group rounded-xl border border-slate-800 bg-slate-900/60 p-6 transition hover:border-indigo-500/50 hover:bg-slate-900/90 block"
+          >
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-500/10 p-3">
+              <div className="rounded-lg bg-indigo-500/10 p-3 transition group-hover:bg-indigo-500/20">
                 <Code2 className="h-6 w-6 text-indigo-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-indigo-400">{totalSubmissions}</p>
-                <p className="text-sm text-slate-400">Total Submissions</p>
+                <p className="text-sm text-slate-400 group-hover:text-slate-200 transition">
+                  Total Submissions <span className="text-indigo-400 ml-1">→</span>
+                </p>
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Rating */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
@@ -157,7 +150,7 @@ export default function Profile() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex justify-between py-2 border-b border-slate-800">
                 <span className="text-slate-400">Max Rating</span>
-                <span className="font-semibold">{profile.max_rating || rating}</span>
+                <span className="font-semibold">{maxRating}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-800">
                 <span className="text-slate-400">Acceptance Rate</span>
@@ -166,14 +159,6 @@ export default function Profile() {
                     ? Math.round((problemsSolved / totalSubmissions) * 100)
                     : 0}%
                 </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-800">
-                <span className="text-slate-400">Account Type</span>
-                <span className="font-semibold capitalize">{profile.role || 'User'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-800">
-                <span className="text-slate-400">User ID</span>
-                <span className="font-semibold">#{profile.user_id}</span>
               </div>
             </div>
           </div>

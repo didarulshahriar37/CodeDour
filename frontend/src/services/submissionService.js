@@ -20,14 +20,15 @@ async function runCode({ problemId, language, code }) {
  * update_solved_count.sql / award_achievements.sql triggers fire from there.
  * Powers the "Submit" button in ProblemDetail.
  */
-async function submitSolution({ problemId, language, code, contestId }) {
+async function submitSolution({ problem_id, problemId, language, language_id, languageId, code, contest_id, contestId }) {
   const { data } = await api.post("/submissions", {
-    problemId,
+    problem_id: problem_id || parseInt(problemId, 10),
     language,
+    language_id: language_id || languageId || 71,
     code,
-    contestId, // omit/undefined for practice submissions outside a contest
+    contest_id: contest_id || contestId || null,
   });
-  return data; // { id, status: "pending" }
+  return data;
 }
  
 async function getSubmissionById(id) {

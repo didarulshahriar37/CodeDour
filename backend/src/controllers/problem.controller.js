@@ -4,10 +4,26 @@ const getAllProblems = async (req, res, next) => {
     try {
         const { difficulty, search, page = 1, limit = 20 } = req.query;
         const offset = (page - 1) * limit;
+
+        let userId = null;
+        if (req.user?.uid) {
+            const userResult = await pool.query(
+                `SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]
+            );
+            if (userResult.rows.length > 0) {
+                userId = userResult.rows[0].user_id;
+            }
+        }
+
         const result = await pool.query(
             `SELECT p.problem_id, p.slug, p.title, p.difficulty, p.total_submissions, p.accepted_submissions,
                 CASE WHEN p.total_submissions > 0 THEN ROUND((p.accepted_submissions::numeric / p.total_submissions::numeric) * 100, 2) 
-                ELSE 0.00 END AS acceptance_rate, u.username AS author_name, p.created_at,
+                ELSE 0.00 END AS acceptance_rate,
+                (SELECT COUNT(DISTINCT user_id)::int FROM submissions WHERE problem_id = p.problem_id AND status = 'Accepted') AS solved_by_count,
+                CASE WHEN $3::int IS NOT NULL THEN
+                    EXISTS (SELECT 1 FROM submissions s2 WHERE s2.problem_id = p.problem_id AND s2.user_id = $3 AND s2.status = 'Accepted')
+                ELSE FALSE END AS solved,
+                u.username AS author_name, p.created_at,
                 COALESCE(ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
              FROM problems p
              LEFT JOIN users u ON p.author_id = u.user_id
@@ -18,8 +34,8 @@ const getAllProblems = async (req, res, next) => {
                AND ($2::text IS NULL OR p.title ILIKE '%' || $2 || '%' OR p.slug ILIKE '%' || $2 || '%')
              GROUP BY p.problem_id, p.slug, p.title, p.difficulty, p.total_submissions, p.accepted_submissions, u.username, p.created_at
              ORDER BY p.problem_id ASC
-             LIMIT $3 OFFSET $4`,
-            [difficulty || null, search || null, limit, offset]
+             LIMIT $4 OFFSET $5`,
+            [difficulty || null, search || null, userId, limit, offset]
         );
         res.status(200).json({ 
             problems: result.rows 

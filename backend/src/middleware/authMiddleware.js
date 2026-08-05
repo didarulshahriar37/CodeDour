@@ -23,4 +23,23 @@ const verifyToken = async(req, res, next) => {
     }
 };
 
-module.exports = {verifyToken};
+const optionalVerifyToken = async(req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if(!authHeader || !authHeader.startsWith('Bearer ')){
+        return next();
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+
+    try{
+        const decodedToken = await auth.verifyIdToken(token);
+        req.user = decodedToken;
+    } 
+    catch(error) {
+
+    }
+    next();
+};
+
+module.exports = {verifyToken, optionalVerifyToken};

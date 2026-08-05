@@ -1,154 +1,20 @@
-import { Link } from "react-router";
-import { useAuth } from "../context/AuthContext";
-import { Code2, Zap, ArrowRight, Terminal, CheckCircle2, LogOut, User, LayoutDashboard, ChevronDown } from "lucide-react";
-import { useState } from "react";
-
-const NAV_LINKS = [
-  { label: "Problemset", to: "/problems" },
-  { label: "Contests", to: "/contests" },
-  { label: "Leaderboard", to: "/leaderboard" },
-];
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Code2, Zap, ArrowRight, Terminal, CheckCircle2 } from "lucide-react";
 
 function LandingPage() {
-  const { firebaseUser, logout } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  
-  // Alias for compatibility
-  const currentUser = firebaseUser;
-
-  async function handleLogout() {
-    try {
-      await logout();
-      setDropdownOpen(false);
-    } catch (error) {
-      console.error("Failed to log out:", error);
-    }
-  }
+  useEffect(() => {
+    document.title = "CodeDour - Competitive Programming Platform";
+  }, []);
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
-      {/* ================= Navbar ================= */}
-      <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
-              <Code2 className="h-5 w-5 text-white" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">
-              Code<span className="text-indigo-400">Dour</span>
-            </span>
-          </Link>
 
-          {/* Links */}
-          <div className="flex items-center gap-8">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.label}
-                to={link.to}
-                className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Auth section */}
-          <div className="flex items-center gap-3">
-            {currentUser ? (
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-slate-800"
-                >
-                  {currentUser.photoURL && (
-                    <img
-                      src={currentUser.photoURL}
-                      alt={currentUser.displayName}
-                      className="h-8 w-8 rounded-full border border-slate-700"
-                    />
-                  )}
-                  <span className="text-sm font-medium text-slate-300">
-                    {currentUser.displayName || currentUser.email?.split('@')[0]}
-                  </span>
-                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown menu */}
-                {dropdownOpen && (
-                  <>
-                    {/* Backdrop to close dropdown when clicking outside */}
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setDropdownOpen(false)}
-                    />
-                    
-                    {/* Dropdown content */}
-                    <div className="absolute right-0 z-20 mt-2 w-56 rounded-lg border border-slate-800 bg-slate-900 py-2 shadow-xl">
-                      {/* Dashboard with nested options */}
-                      <div className="border-b border-slate-800 pb-2">
-                        <Link
-                          to="/profile"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800"
-                        >
-                          <LayoutDashboard className="h-4 w-4" />
-                          Dashboard
-                        </Link>
-                        {/* Nested items under Dashboard */}
-                        <div className="ml-8 space-y-1 border-l border-slate-800 pl-3">
-                          <Link
-                            to="/profile"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-2 py-1.5 text-xs text-slate-400 transition-colors hover:text-slate-200"
-                          >
-                            <User className="h-3.5 w-3.5" />
-                            My Profile
-                          </Link>
-                          <Link
-                            to="/my-submissions"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-2 py-1.5 text-xs text-slate-400 transition-colors hover:text-slate-200"
-                          >
-                            <Terminal className="h-3.5 w-3.5" />
-                            My Submissions
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* Sign out */}
-                      <div className="pt-2">
-                        <button
-                          onClick={handleLogout}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-slate-800 hover:text-red-300"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign out
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
-              >
-                Sign in
-              </Link>
-            )}
-          </div>
-        </nav>
-      </header>
-
-      {/* ================= Hero ================= */}
-      <section className="relative overflow-hidden">
-        {/* soft background glow */}
+      <section className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden py-12">
         <div
           aria-hidden
           className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]"
         />
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
           {/* Left: copy */}
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
@@ -162,7 +28,7 @@ function LandingPage() {
               </span>
             </h1>
             <p className="mt-6 max-w-lg text-lg text-slate-400">
-              Track your progress, compete with peers, and become a better programmer through challenging problems and real-time contests.
+              Track your progress and become a better programmer through challenging problems.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
@@ -171,12 +37,6 @@ function LandingPage() {
               >
                 Start solving
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/contests"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
-              >
-                Browse contests
               </Link>
             </div>
           </div>
@@ -227,7 +87,54 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* ================= About CodeDour ================= */}
+      <section className="relative flex min-h-[calc(100vh-4rem)] items-center py-12 bg-gradient-to-b from-slate-950 via-slate-900/30 to-slate-950">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center">
+            <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-400">
+              About CodeDour
+            </span>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Everything You Need to Level Up Your Coding
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-base text-slate-400">
+              CodeDour is a modern competitive programming platform built to help developers solve algorithmic challenges, sharpen problem-solving skills, and track progress.
+            </p>
+          </div>
 
+          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 hover:border-slate-700 transition-colors">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Code2 className="h-6 w-6" />
+              </div>
+              <h3 className="mt-6 text-xl font-bold text-white">Curated Challenges</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                Explore a rich collection of algorithmic problems categorized by difficulty—from basic syntax and arrays to advanced dynamic programming and data structures.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 hover:border-slate-700 transition-colors">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+                <Zap className="h-6 w-6" />
+              </div>
+              <h3 className="mt-6 text-xl font-bold text-white">Instant Multi-Language Judging</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                Compile and run your code in real-time across 13 programming languages including C, C++, Python, Java, JavaScript, Rust, Go, and C# with instant test case verdicts.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 hover:border-slate-700 transition-colors">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <Terminal className="h-6 w-6" />
+              </div>
+              <h3 className="mt-6 text-xl font-bold text-white">Personalized Progress Tracking</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                Monitor your total submissions, unique problem solve counts, submission history, and performance metrics directly from your personalized profile dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
