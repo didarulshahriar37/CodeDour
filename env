@@ -1,5 +1,0 @@
-PORT=5000
-
-DATABASE_URL=postgresql://neondb_owner:npg_nVw9PgBfGy3U@ep-icy-grass-ax597xux.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require
-
-JUDGE0_API_URL=https://ce.judge0.com
