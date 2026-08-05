@@ -44,6 +44,16 @@ export function AuthProvider({ children }) {
     }
   }
  
+  async function loginWithGoogle() {
+    setError(null);
+    try {
+      await authService.loginWithGoogle();
+    } catch (err) {
+      setError(err);
+      throw err;
+    }
+  }
+ 
   async function register(email, password, username) {
     setError(null);
     try {
@@ -77,6 +87,7 @@ export function AuthProvider({ children }) {
     loading,
     error,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshProfile,

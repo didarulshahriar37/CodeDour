@@ -1,6 +1,8 @@
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updatePassword,
@@ -8,6 +10,8 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/config";
 import api from "./api";
+ 
+const googleProvider = new GoogleAuthProvider();
  
 /**
  * Register a new user: creates the Firebase account, then creates the
@@ -33,6 +37,31 @@ async function register({ email, password, username }) {
  
 async function login({ email, password }) {
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  return credential.user;
+}
+ 
+/**
+ * Google sign-in. First-time Google users won't have a Postgres profile row
+ * yet — same /api/auth dependency as register() above, so profile creation
+ * for brand-new Google users will also 404 until that route is live.
+ */
+async function loginWithGoogle() {
+  const credential = await signInWithPopup(auth, googleProvider);
+ 
+  try {
+    await api.post("/auth/register", {
+      firebaseUid: credential.user.uid,
+      email: credential.user.email,
+      username: credential.user.displayName,
+      provider: "google",
+    });
+  } catch {
+    // If they already have a profile, the backend should just no-op/409 here
+    // rather than error — but since /api/auth isn't live yet, this silently
+    // no-ops for now. AuthContext's getProfile() call will surface it if the
+    // profile really is missing.
+  }
+ 
   return credential.user;
 }
  
@@ -109,6 +138,7 @@ async function getUserAchievements(id) {
 const authService = {
   register,
   login,
+  loginWithGoogle,
   logout,
   resetPassword,
   changePassword,
@@ -126,6 +156,7 @@ export default authService;
 export {
   register,
   login,
+  loginWithGoogle,
   logout,
   resetPassword,
   changePassword,

@@ -9,10 +9,10 @@ import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
 import Submissions from "./pages/Submissions";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
  
 // TODO: build these, then swap in for the placeholders below
-// import Login from "./pages/Login";
-// import Register from "./pages/Register";
 // import Profile from "./pages/Profile";
 // import Leaderboard from "./pages/Leaderboard";
  
@@ -36,8 +36,6 @@ export default function App() {
             <Route path="/contests" element={<Contests />} />
  
             {/* TODO: replace with real pages as they're built */}
-            <Route path="/login" element={<ComingSoon label="Login" />} />
-            <Route path="/register" element={<ComingSoon label="Register" />} />
             <Route
               path="/leaderboard"
               element={<ComingSoon label="Leaderboard" />}
@@ -53,6 +51,8 @@ export default function App() {
           {/* Routes that render full-screen without the main Navbar */}
           <Route path="/problems/:id" element={<ProblemDetail />} />
           <Route path="/contests/:id" element={<ContestDetail />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
