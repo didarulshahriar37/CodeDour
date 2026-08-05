@@ -3,8 +3,10 @@ const pool = require('../config/db');
 const syncUser = async(req, res, next) => {
     try{
         const {uid, email, name, picture} = req.user;
+        const {fullName} = req.body;
 
-        const displayName = name || email.split('@')[0];
+        // Use fullName from request body, fallback to Firebase name, then email
+        const displayName = fullName || name || email.split('@')[0];
         const username = email.split('@')[0];
         const avatar = picture || null;
 

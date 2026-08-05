@@ -8,7 +8,7 @@ export default function Register() {
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
  
-  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,10 +31,25 @@ export default function Register() {
  
     setSubmitting(true);
     try {
-      await register(email, password, username);
+      // Generate username from email
+      const username = email.split('@')[0];
+      await register(email, password, username, fullName);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message || "Couldn't create your account. Try again.");
+      // Handle Firebase auth errors
+      let errorMessage = "Couldn't create your account. Try again.";
+      
+      if (err.message?.includes('auth/email-already-in-use')) {
+        errorMessage = "This email is already registered. Please sign in instead.";
+      } else if (err.message?.includes('auth/weak-password')) {
+        errorMessage = "Password is too weak. Please use at least 6 characters.";
+      } else if (err.message?.includes('auth/invalid-email')) {
+        errorMessage = "Invalid email address.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -84,22 +99,22 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                Username
+                Full Name
               </label>
               <div className="relative">
                 <User className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                 <input
                   type="text"
                   required
-                  minLength={3}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="yourhandle"
+                  minLength={2}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
                   className="w-full rounded-lg border border-slate-800 bg-slate-950 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
- 
+
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-400">
                 Email

@@ -1,60 +1,38 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
- 
+import { BrowserRouter, Routes, Route } from "react-router";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-import Layout from "./layouts/Layout";
-import LandingPage from "./pages/Home";
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+// Friend's new pages
 import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
 import Submissions from "./pages/Submissions";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
- 
-// TODO: build these, then swap in for the placeholders below
-// import Profile from "./pages/Profile";
-// import Leaderboard from "./pages/Leaderboard";
- 
-function ComingSoon({ label }) {
+
+function App() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center bg-slate-950 text-slate-500">
-      {label} — coming soon
-    </div>
-  );
-}
- 
-export default function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
-          {/* Routes that share the main Navbar */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/problems" element={<Problems />} />
-            <Route path="/contests" element={<Contests />} />
- 
-            {/* TODO: replace with real pages as they're built */}
-            <Route
-              path="/leaderboard"
-              element={<ComingSoon label="Leaderboard" />}
-            />
-            <Route path="/submissions" element={<Submissions />} />
- 
-            {/* Signed-in only */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<ComingSoon label="Profile" />} />
-            </Route>
-          </Route>
- 
-          {/* Routes that render full-screen without the main Navbar */}
-          <Route path="/problems/:id" element={<ProblemDetail />} />
-          <Route path="/contests/:id" element={<ContestDetail />} />
+          {/* Your tiran pages */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/my-submissions" element={<Submissions />} />
+          
+          {/* Friend's integrated pages */}
+          <Route path="/problems" element={<Problems />} />
+          <Route path="/problems/:id" element={<ProblemDetail />} />
+          <Route path="/contests" element={<Contests />} />
+          <Route path="/contests/:id" element={<ContestDetail />} />
+          <Route path="/submissions" element={<Submissions />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
+
+export default App;

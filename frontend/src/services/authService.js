@@ -6,6 +6,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updatePassword,
+  updateProfile as updateFirebaseProfile,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
@@ -23,16 +24,24 @@ const googleProvider = new GoogleAuthProvider();
  * POST will 404 until your friend uncomments that line and the route file
  * is wired up.
  */
-async function register({ email, password, username }) {
+async function register({ email, password, username, fullName }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
+  
+  // Update Firebase profile with display name
+  if (fullName && credential.user) {
+    await updateFirebaseProfile(credential.user, {
+      displayName: fullName
+    });
+  }
  
-  const { data } = await api.post("/auth/register", {
-    firebaseUid: credential.user.uid,
-    email,
-    username,
-  });
- 
-  return { firebaseUser: credential.user, profile: data };
+  // Sync user to backend database
+  try {
+    const { data } = await api.post("/auth/sync");
+    return { firebaseUser: credential.user, profile: data.user };
+  } catch (error) {
+    console.error("Failed to sync user to backend:", error);
+    return { firebaseUser: credential.user, profile: null };
+  }
 }
  
 async function login({ email, password }) {
@@ -49,17 +58,14 @@ async function loginWithGoogle() {
   const credential = await signInWithPopup(auth, googleProvider);
  
   try {
-    await api.post("/auth/register", {
+    await api.post("/auth/sync", {
       firebaseUid: credential.user.uid,
       email: credential.user.email,
       username: credential.user.displayName,
       provider: "google",
     });
   } catch {
-    // If they already have a profile, the backend should just no-op/409 here
-    // rather than error — but since /api/auth isn't live yet, this silently
-    // no-ops for now. AuthContext's getProfile() call will surface it if the
-    // profile really is missing.
+    // If sync fails, user can still use Firebase auth
   }
  
   return credential.user;
@@ -100,32 +106,32 @@ function getCurrentFirebaseUser() {
  
 // TODO: not live yet — backend's GET /users/me is commented out
 async function getProfile() {
-  const { data } = await api.get("/users/me");
-  return data;
+  const { data } = await api.get("/users/profile");
+  return data.user; // Backend returns { user: {...} }
 }
  
 // TODO: not live yet — no PUT route exists on /api/users at all yet
 async function updateProfile(updates) {
-  const { data } = await api.put("/users/me", updates);
+  const { data } = await api.put("/users/profile", updates);
   return data;
 }
  
 // Live now: GET /api/users/:id
 async function getUserById(id) {
   const { data } = await api.get(`/users/${id}`);
-  return data;
+  return data.user; // Backend returns { user: {...} }
 }
  
 // Live now: GET /api/users/:id/stats — backed by get_user_statistics.sql
 async function getUserStats(id) {
   const { data } = await api.get(`/users/${id}/stats`);
-  return data;
+  return data.stats; // Backend returns { stats: {...} }
 }
  
 // Live now: GET /api/users/:id/submissions
 async function getUserSubmissions(id) {
   const { data } = await api.get(`/users/${id}/submissions`);
-  return data;
+  return data.submissions; // Backend returns { submissions: [...] }
 }
  
 // TODO: not live yet — lives on /api/achievements, which is still commented
