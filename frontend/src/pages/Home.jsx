@@ -1,52 +1,9 @@
-import { Code2, Zap, ArrowRight, Terminal, CheckCircle2 } from "lucide-react";
-
-const NAV_LINKS = [
-  { label: "Problemset", to: "/problems" },
-  { label: "Contests", to: "/contests" },
-  { label: "Leaderboard", to: "/leaderboard" },
-];
-
+import { Link } from "react-router-dom";
+import { Zap, ArrowRight, Terminal, CheckCircle2 } from "lucide-react";
+ 
 function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
-      {/* ================= Navbar ================= */}
-      <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
-              <Code2 className="h-5 w-5 text-white" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">
-              Code<span className="text-indigo-400">Dour</span>
-            </span>
-          </a>
-
-          {/* Links */}
-          <div className="flex items-center gap-8">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.label}
-                href="#" /* TODO: <Link to={link.to}> */
-                className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Auth buttons */}
-          <div className="flex items-center gap-3">
-            <a
-              href="#" /* TODO: <Link to="/login"> */
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
-            >
-              Sign in
-            </a>
-          </div>
-        </nav>
-      </header>
-
       {/* ================= Hero ================= */}
       <section className="relative overflow-hidden">
         {/* soft background glow */}
@@ -71,22 +28,22 @@ function LandingPage() {
               Track your progress, compete with peers, and become a better programmer through challenging problems and real-time contests.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <a
-                href="#" /* TODO: <Link to="/problems"> */
+              <Link
+                to="/problems"
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-colors hover:bg-indigo-400"
               >
                 Start solving
                 <ArrowRight className="h-4 w-4" />
-              </a>
-              <a
-                href="#" /* TODO: <Link to="/contests"> */
+              </Link>
+              <Link
+                to="/contests"
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
               >
                 Browse contests
-              </a>
+              </Link>
             </div>
           </div>
-
+ 
           {/* Right: code editor mockup */}
           <div className="relative">
             <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 shadow-2xl shadow-black/40">
@@ -132,10 +89,10 @@ function LandingPage() {
           </div>
         </div>
       </section>
-
-
+ 
+ 
     </div>
   );
 }
-
+ 
 export default LandingPage;
