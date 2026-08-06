@@ -58,16 +58,17 @@ const getProblemById = async (req, res, next) => {
         }
 
         const testCases = await pool.query(
-            `SELECT test_case_id, input, expected_output, explanation
+            `SELECT test_case_id, input, expected_output, is_sample, explanation
              FROM test_cases
-             WHERE problem_id = $1 AND is_sample = TRUE
-             ORDER BY test_case_id ASC`,
+             WHERE problem_id = $1
+             ORDER BY is_sample DESC, test_case_id ASC`,
             [result.rows[0].problem_id]
         );
 
         res.status(200).json({
             problem: result.rows[0],
-            sample_test_cases: testCases.rows
+            sample_test_cases: testCases.rows.filter(tc => tc.is_sample),
+            test_cases: testCases.rows
         });
     } catch (error) {
         next(error);

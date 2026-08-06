@@ -10,6 +10,7 @@ import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
 import Submissions from "./pages/Submissions";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/contests" element={<Contests />} />
             <Route path="/contests/:id" element={<ContestDetail />} />
             <Route path="/submissions" element={<Submissions />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Route>
         </Routes>
       </AuthProvider>

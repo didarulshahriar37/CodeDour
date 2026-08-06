@@ -42,4 +42,20 @@ const optionalVerifyToken = async(req, res, next) => {
     next();
 };
 
-module.exports = {verifyToken, optionalVerifyToken};
+const pool = require('../config/db');
+
+const verifyAdmin = async (req, res, next) => {
+    await verifyToken(req, res, async () => {
+        try {
+            const userRes = await pool.query(`SELECT role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+            if (userRes.rows.length === 0 || userRes.rows[0].role !== 'admin') {
+                return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+            }
+            next();
+        } catch (err) {
+            next(err);
+        }
+    });
+};
+
+module.exports = { verifyToken, optionalVerifyToken, verifyAdmin };

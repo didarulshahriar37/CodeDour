@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Code2, ChevronDown, User, LogOut } from "lucide-react";
+import { Code2, ChevronDown, User, LogOut, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
  
@@ -10,10 +10,11 @@ const NAV_LINKS = [
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { firebaseUser, isAuthenticated, logout } = useAuth();
+  const { firebaseUser, profile, isAuthenticated, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  const isAdmin = profile?.role === "admin";
   const isActive = (to) => location.pathname.startsWith(to);
   
   useEffect(() => {
@@ -67,6 +68,19 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {/* Admin Link - ONLY shown for Admin */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20 ${
+                isActive("/admin") ? "ring-2 ring-amber-500/50" : ""
+              }`}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Admin Dashboard
+            </Link>
+          )}
         </div>
  
         {/* Auth */}
@@ -101,6 +115,16 @@ export default function Navbar() {
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-800 bg-slate-900 py-2 shadow-xl">
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-amber-400 transition-colors hover:bg-slate-800"
+                    >
+                      <Shield className="h-4 w-4 text-amber-400" />
+                      Admin Dashboard
+                    </Link>
+                  )}
                   <Link
                     to="/profile"
                     onClick={() => setDropdownOpen(false)}
