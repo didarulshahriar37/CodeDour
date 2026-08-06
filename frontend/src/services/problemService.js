@@ -25,6 +25,11 @@ async function getRecommendedProblems() {
   const { data } = await api.get("/problems/recommended");
   return data;
 }
+
+async function getRecommendations(problemId) {
+  const { data } = await api.get(`/problems/${problemId}/recommendations`);
+  return data;
+}
  
 async function getProblemCategories() {
   const { data } = await api.get("/problems/categories");
@@ -36,6 +41,7 @@ const problemService = {
   getProblemById,
   getProblemStats,
   getRecommendedProblems,
+  getRecommendations,
   getProblemCategories,
 };
  
@@ -45,6 +51,7 @@ export {
   getProblemById,
   getProblemStats,
   getRecommendedProblems,
+  getRecommendations,
   getProblemCategories,
 };
  

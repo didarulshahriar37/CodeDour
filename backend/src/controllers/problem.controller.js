@@ -108,4 +108,41 @@ const createProblem = async (req, res, next) => {
     }
 };
 
-module.exports = { getAllProblems, getProblemById, createProblem };
+const getRecommendedByTags = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const problemResult = await pool.query(
+            `SELECT problem_id FROM problems WHERE slug = $1 OR problem_id::text = $1`,
+            [id]
+        );
+        if (problemResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Problem not found' });
+        }
+        const currentProblemId = problemResult.rows[0].problem_id;
+
+        const result = await pool.query(
+            `SELECT p.problem_id, p.slug, p.title, p.difficulty,
+                    COALESCE(ARRAY_AGG(t2.name) FILTER (WHERE t2.name IS NOT NULL), '{}') AS tags,
+                    COUNT(DISTINCT pt.tag_id)::int AS tag_match_count,
+                    (SELECT COUNT(DISTINCT user_id)::int FROM submissions WHERE problem_id = p.problem_id AND status = 'Accepted') AS solved_by_count
+             FROM problems p
+             JOIN problem_tags pt ON p.problem_id = pt.problem_id
+             LEFT JOIN problem_tags pt2 ON p.problem_id = pt2.problem_id
+             LEFT JOIN tags t2 ON pt2.tag_id = t2.tag_id
+             WHERE pt.tag_id IN (SELECT tag_id FROM problem_tags WHERE problem_id = $1)
+               AND p.problem_id != $1
+               AND p.is_public = TRUE
+             GROUP BY p.problem_id, p.slug, p.title, p.difficulty
+             ORDER BY tag_match_count DESC, p.problem_id ASC
+             LIMIT 4`,
+            [currentProblemId]
+        );
+
+        res.status(200).json({ recommendations: result.rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getAllProblems, getProblemById, createProblem, getRecommendedByTags };

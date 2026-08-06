@@ -13,6 +13,8 @@ import {
   FileText,
   History,
   X,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import problemService from "../services/problemService";
 import submissionService from "../services/submissionService";
@@ -137,6 +139,9 @@ export default function ProblemDetail() {
   const [submissionsError, setSubmissionsError] = useState(null);
   const [selectedSubmissionCode, setSelectedSubmissionCode] = useState(null);
 
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+
   const fetchSubmissions = async () => {
     setLoadingSubmissions(true);
     setSubmissionsError(null);
@@ -166,6 +171,19 @@ export default function ProblemDetail() {
         if (data.problem?.title) {
           document.title = `${data.problem.title} | CodeDour`;
         }
+
+        setLoadingRecs(true);
+        problemService
+          .getRecommendations(problemId)
+          .then((recData) => {
+            if (!cancelled) setRecommendations(recData.recommendations || []);
+          })
+          .catch(() => {
+            if (!cancelled) setRecommendations([]);
+          })
+          .finally(() => {
+            if (!cancelled) setLoadingRecs(false);
+          });
       } catch (err) {
         if (!cancelled) {
           setProblemError(err.message || "Problem not found");
@@ -228,6 +246,16 @@ export default function ProblemDetail() {
       // Refresh global profile state and submissions list instantly
       refreshProfile().catch(() => {});
       fetchSubmissions().catch(() => {});
+
+      // Fetch tag-based recommendations on Accepted
+      if (isAccepted) {
+        setLoadingRecs(true);
+        problemService
+          .getRecommendations(problemId)
+          .then((data) => setRecommendations(data.recommendations || []))
+          .catch(() => setRecommendations([]))
+          .finally(() => setLoadingRecs(false));
+      }
     } catch (err) {
       setRunState("failed");
       setVerdict({
@@ -564,7 +592,7 @@ export default function ProblemDetail() {
           </div>
 
           {/* verdict console */}
-          <div className="mt-4 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80">
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/80 transition-all duration-300">
             <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3 text-xs font-medium text-slate-500">
               <Terminal size={14} />
               Result
@@ -573,7 +601,7 @@ export default function ProblemDetail() {
             <div className="p-5">
               {runState === "idle" && (
                 <p className="text-sm text-slate-500">
-                  Submit your code to judge against test cases on Judge0.
+                  Your submission result will appear here.
                 </p>
               )}
 
@@ -605,6 +633,56 @@ export default function ProblemDetail() {
                       {verdict.time} · {verdict.memory}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* Up Next recommendations banner */}
+              {runState === "passed" && (
+                <div className="mt-5 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 via-indigo-500/5 to-violet-500/5 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles size={16} className="text-emerald-400" />
+                    <span className="text-sm font-semibold text-emerald-300">
+                      Great job! Try these next
+                    </span>
+                  </div>
+
+                  {loadingRecs && (
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <Loader2 size={14} className="animate-spin" />
+                      Finding similar problems...
+                    </div>
+                  )}
+
+                  {!loadingRecs && recommendations.length === 0 && (
+                    <p className="text-xs text-slate-500">No similar problems found yet.</p>
+                  )}
+
+                  {!loadingRecs && recommendations.length > 0 && (
+                    <div className="space-y-2">
+                      {recommendations.map((rec) => (
+                        <Link
+                          key={rec.problem_id}
+                          to={`/problems/${rec.problem_id}`}
+                          className="group flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/60 px-4 py-3 transition hover:border-indigo-500/40 hover:bg-slate-800/60"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-sm font-medium text-slate-200 group-hover:text-white transition truncate">
+                              {rec.title}
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${difficultyColor(rec.difficulty)}`}
+                            >
+                              {rec.difficulty}
+                            </span>
+                          </div>
+                          <ArrowRight
+                            size={14}
+                            className="shrink-0 text-slate-600 transition group-hover:text-indigo-400 group-hover:translate-x-0.5"
+                          />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
