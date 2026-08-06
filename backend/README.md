@@ -1,323 +1,145 @@
-# CodeDour Backend
+# CodeDour Backend Server ⚙️
 
-REST API server for the CodeDour competitive programming platform. Built with **Express.js**, **PostgreSQL (NeonDB)**, **Firebase Authentication**, and **Judge0 CE** for code execution.
-
----
-
-## Installation & Setup
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [npm](https://www.npmjs.com/)
-- A [NeonDB](https://neon.tech/) PostgreSQL database (or any PostgreSQL instance)
-- A [Firebase](https://firebase.google.com/) project (for authentication)
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/didarulshahriar37/CodeDour.git
-cd CodeDour/backend
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure environment variables
-
-Create a `.env` file in the `backend/` directory:
-
-```env
-PORT=5000
-DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
-JUDGE0_API_URL=https://ce.judge0.com
-```
-
-### 4. Firebase Setup (for authentication)
-
-1. Go to **Firebase Console** → **Project Settings** → **Service Accounts**
-2. Click **Generate New Private Key** and download the JSON file
-3. Save it as `backend/src/config/serviceAccountKey.json`
-4. Make sure `serviceAccountKey.json` is listed in `.gitignore`
-
-### 5. Run the server
-
-**Development** (with auto-restart):
-```bash
-npm run dev
-```
-
-**Production**:
-```bash
-npm start
-```
-
-The server will start on `http://localhost:5000`
-
-### 6. Verify
-
-Open your browser and navigate to:
-```
-http://localhost:5000/health
-```
-
-You should receive:
-```json
-{ "status": "ok", "message": "CodeDour is running" }
-```
+The backend service for CodeDour is an Express.js RESTful API server connected to PostgreSQL (hosted on NeonDB), Firebase Authentication, and Judge0 Remote Code Execution API.
 
 ---
 
-## Project Structure
+## 🛠️ Architecture & Services
+
+- **Database**: PostgreSQL (NeonDB) managed via `pg` connection pool.
+- **Authentication**: Firebase Admin SDK token validation & Database Role verification (`user` vs `admin`).
+- **Code Execution Engine**: Judge0 API integration for executing C, C++, Java, and Python code against standard test cases.
+- **Deployment**: Vercel Serverless Functions (`api/index.js` rewrite).
+
+---
+
+## 📁 Folder Structure
 
 ```
 backend/
-├── index.js                          # Entry point - starts the server
-├── package.json                      # Dependencies & scripts
-├── .env                              # Environment variables (not committed)
-└── src/
-    ├── app.js                        # Express app setup, middleware & route mounting
-    ├── config/
-    │   ├── db.js                     # PostgreSQL (NeonDB) connection pool
-    │   └── firebase.js               # Firebase Admin SDK initialization
-    ├── middleware/
-    │   ├── authMiddleware.js          # Firebase JWT token verification
-    │   └── errorHandler.js           # Global error handling middleware
-    ├── controllers/
-    │   ├── auth.controller.js         # User sync (Firebase → PostgreSQL)
-    │   ├── user.controller.js         # User profiles & statistics
-    │   ├── problem.controller.js      # Problem CRUD & listing
-    │   ├── submission.controller.js   # Code submission & Judge0 integration
-    │   ├── contest.controller.js      # Contest management (WIP)
-    │   ├── leaderboard.controller.js  # Global & contest leaderboards
-    │   ├── achievement.controller.js  # Achievement listing
-    │   └── tag.controller.js          # Problem tags
-    ├── routes/
-    │   ├── auth.routes.js
-    │   ├── user.routes.js
-    │   ├── problem.routes.js
-    │   ├── submission.routes.js
-    │   ├── contest.routes.js
-    │   ├── leaderboard.routes.js
-    │   ├── achievement.routes.js
-    │   └── tag.routes.js
-    └── services/
-        ├── judge0.service.js          # Judge0 CE API integration
-        └── submission.service.js      # Test case processing & verdict mapping
+├── api/
+│   └── index.js           # Serverless entrypoint for Vercel deployment
+├── src/
+│   ├── config/
+│   │   ├── db.js          # PostgreSQL Pool connection configuration
+│   │   └── firebase.js    # Firebase Admin SDK initialization
+│   ├── controllers/
+│   │   ├── admin.controller.js   # User management & problem admin actions
+│   │   ├── auth.controller.js    # User registration, login & token verify
+│   │   ├── problem.controller.js # Problem CRUD & tag recommendations
+│   │   ├── submission.controller.js # Code submission & Judge0 execution
+│   │   └── tag.controller.js     # Tag management
+│   ├── middleware/
+│   │   └── authMiddleware.js     # verifyToken & verifyAdmin middleware
+│   ├── routes/
+│   │   ├── admin.routes.js       # Admin routes (/api/admin)
+│   │   ├── auth.routes.js        # Auth routes (/api/auth)
+│   │   ├── problem.routes.js     # Problem routes (/api/problems)
+│   │   ├── submission.routes.js  # Submission routes (/api/submissions)
+│   │   └── tag.routes.js         # Tag routes (/api/tags)
+│   ├── services/
+│   │   └── judge0.service.js     # Remote code evaluation via Judge0 API
+│   └── app.js             # Express app setup, CORS, JSON parser & route definitions
+├── index.js               # Local server startup entrypoint
+├── package.json           # Backend dependencies & start scripts
+└── vercel.json            # Vercel function routing rules
 ```
 
 ---
 
-## API Endpoints
+## 📡 API Routes Reference
 
-### Health Check
+### Auth Routes (`/api/auth`)
 
-| Method | Endpoint  | Auth | Description              |
-|--------|-----------|------|--------------------------|
-| GET    | `/health` | No   | Check if server is running |
-
----
-
-### Authentication (`/api/auth`)
-
-> **Status:** Requires Firebase service account setup
-
-| Method | Endpoint         | Auth | Description                                              |
-|--------|------------------|------|----------------------------------------------------------|
-| POST   | `/api/auth/sync` | Yes  | Sync Firebase user to PostgreSQL (upsert on first login) |
-
-**Request Headers:**
-```
-Authorization: Bearer <firebase_id_token>
-```
+| Endpoint | Method | Access | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/auth/register` | `POST` | Public | Register a new user and sync profile with PostgreSQL |
+| `/api/auth/login` | `POST` | Public | Authenticate user credentials with Firebase & return user profile |
+| `/api/auth/me` | `GET` | Authenticated | Fetch current authenticated user profile and stats |
 
 ---
 
-### Users (`/api/users`)
+### Problem Routes (`/api/problems`)
 
-| Method | Endpoint                     | Auth | Description                              |
-|--------|------------------------------|------|------------------------------------------|
-| GET    | `/api/users/profile`         | Yes  | Get logged-in user's own profile         |
-| GET    | `/api/users/:id`             | No   | Get a user's public profile by ID        |
-| GET    | `/api/users/:id/stats`       | No   | Get a user's statistics                  |
-| GET    | `/api/users/:id/submissions` | No   | Get a user's submission history (paginated) |
-
-**Query Parameters for `/api/users/:id/submissions`:**
-| Parameter | Type   | Default | Description        |
-|-----------|--------|---------|--------------------|
-| page      | number | 1       | Page number        |
-| limit     | number | 20      | Results per page   |
+| Endpoint | Method | Access | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/problems` | `GET` | Public | List all public problems with pagination, difficulty & search filters |
+| `/api/problems/:id` | `GET` | Public | Get problem statement, constraints, time/memory limits & sample test cases |
+| `/api/problems/:id/recommendations` | `GET` | Public | Get tag-matched problem recommendations based on problem tags |
+| `/api/problems` | `POST` | Admin | Create a new problem with tags and test cases |
+| `/api/problems/:id/submissions` | `GET` | Authenticated | Get user's submission history for a specific problem |
 
 ---
 
-### Problems (`/api/problems`)
+### Submission Routes (`/api/submissions`)
 
-| Method | Endpoint            | Auth | Description                                    |
-|--------|---------------------|------|------------------------------------------------|
-| GET    | `/api/problems`     | No   | List all public problems (filterable, paginated) |
-| GET    | `/api/problems/:id` | No   | Get problem details + sample test cases        |
-| POST   | `/api/problems`     | No*  | Create a new problem with test cases & tags    |
+| Endpoint | Method | Access | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/submissions` | `POST` | Authenticated | Submit code for execution against Judge0 and record submission result |
+| `/api/submissions` | `GET` | Public | Retrieve global or user submission logs with verdicts |
+| `/api/submissions/:id` | `GET` | Public | Get detailed verdict breakdown for a specific submission |
 
-> *Authentication will be added for problem creation (admin/setter only)
+---
 
-**Query Parameters for `GET /api/problems`:**
-| Parameter  | Type   | Default | Description                          |
-|------------|--------|---------|--------------------------------------|
-| difficulty | string | —       | Filter by difficulty: Easy, Medium, Hard |
-| search     | string | —       | Search by title or slug              |
-| page       | number | 1       | Page number                          |
-| limit      | number | 20      | Results per page                     |
+### Tag Routes (`/api/tags`)
 
-**Request Body for `POST /api/problems`:**
-```json
-{
-  "slug": "two-sum",
-  "title": "Two Sum",
-  "description": "Given an array of integers...",
-  "input_format": "First line contains n and target...",
-  "output_format": "Print the two indices...",
-  "constraints": "2 <= n <= 10^4",
-  "difficulty": "Easy",
-  "time_limit": 1.0,
-  "memory_limit": 256,
-  "author_id": 1,
-  "is_public": true,
-  "tags": [1, 2],
-  "test_cases": [
-    {
-      "input": "4 9\n2 7 11 15",
-      "expected_output": "0 1",
-      "is_sample": true,
-      "explanation": "nums[0] + nums[1] = 2 + 7 = 9"
-    }
-  ]
-}
+| Endpoint | Method | Access | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/tags` | `GET` | Public | Fetch all available problem category tags (e.g. Strings, Arrays, Math) |
+| `/api/tags` | `POST` | Admin | Add a new problem category tag |
+
+---
+
+### Admin Routes (`/api/admin`)
+
+| Endpoint | Method | Access | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/admin/users` | `GET` | Admin | List all registered platform users with roles and solve stats |
+| `/api/admin/users/:id/role` | `PUT` | Admin | Update user role (`user` ↔ `admin`) |
+| `/api/admin/users/:id` | `DELETE` | Admin | Permanently delete a user account |
+| `/api/admin/problems/:id` | `PUT` | Admin | Update problem details, time/memory limits, tags & test cases |
+| `/api/admin/problems/:id` | `DELETE` | Admin | Delete a problem along with related submissions, test cases & tags |
+
+---
+
+## ⚙️ Environment Variables Setup
+
+Create a `.env` file in the `backend/` root directory:
+
+```env
+PORT=5000
+DATABASE_URL=postgresql://neondb_owner:your_password@ep-example.eastus2.azure.neon.tech/neondb?sslmode=require
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"your_project_id",...}
+JUDGE0_API_URL=https://judge0-ce.p.rapidapi.com
+JUDGE0_API_KEY=your_rapidapi_judge0_key
 ```
 
 ---
 
-### Submissions (`/api/submissions`)
+## 📥 Installation & Running Guide
 
-| Method | Endpoint               | Auth | Description                                         |
-|--------|------------------------|------|-----------------------------------------------------|
-| POST   | `/api/submissions`     | No*  | Submit code for judging (sends to Judge0, stores result) |
-| GET    | `/api/submissions/:id` | No   | Get submission details by ID                        |
+### Steps
 
-> *Authentication will be added for submissions
+1. **Navigate to the backend directory**:
+   ```bash
+   cd backend
+   ```
 
-**Request Body for `POST /api/submissions`:**
-```json
-{
-  "problem_id": 1,
-  "user_id": 1,
-  "language": "Python",
-  "language_id": 71,
-  "code": "n, target = map(int, input().split())\nnums = list(map(int, input().split()))\nfor i in range(n):\n    for j in range(i+1, n):\n        if nums[i] + nums[j] == target:\n            print(i, j)\n            exit()",
-  "contest_id": null
-}
-```
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-**Common Judge0 Language IDs:**
-| Language   | ID |
-|------------|----|
-| Python 3   | 71 |
-| C++ 17     | 54 |
-| Java       | 62 |
-| JavaScript | 63 |
-| C          | 50 |
+3. **Set Up Environment Variables**:
+   Create `.env` using the template above with your NeonDB credentials, Firebase service account, and RapidAPI key.
 
-**Response:**
-```json
-{
-  "message": "Submission processed",
-  "submission_id": 1,
-  "verdict": "Accepted",
-  "execution_time": 0.015,
-  "memory_used": 3200,
-  "results": [
-    {
-      "input": "4 9\n2 7 11 15",
-      "expected_output": "0 1",
-      "actual_output": "0 1\n",
-      "status": { "id": 3, "description": "Accepted" },
-      "time": "0.015",
-      "memory": 3200
-    }
-  ]
-}
-```
+4. **Start Local Development Server**:
+   ```bash
+   npm run dev
+   ```
+   The API server will listen on `http://localhost:5000`.
 
-**Possible Verdicts:**
-`Accepted`, `Wrong Answer`, `Time Limit Exceeded`, `Memory Limit Exceeded`, `Compilation Error`, `Runtime Error`
-
----
-
-### Contests (`/api/contests`)
-
-> **Status:** Work in progress
-
-| Method | Endpoint                  | Auth | Description                         |
-|--------|---------------------------|------|-------------------------------------|
-| GET    | `/api/contests`           | No   | List all contests                   |
-| GET    | `/api/contests/:id`       | No   | Get contest details & problems      |
-| POST   | `/api/contests`           | Yes  | Create a new contest (admin only)   |
-| POST   | `/api/contests/:id/join`  | Yes  | Register for a contest              |
-
----
-
-### Leaderboard (`/api/leaderboard`)
-
-| Method | Endpoint                       | Auth | Description                           |
-|--------|--------------------------------|------|---------------------------------------|
-| GET    | `/api/leaderboard`             | No   | Global leaderboard (ranked by rating) |
-| GET    | `/api/leaderboard/contest/:id` | No   | Contest-specific leaderboard          |
-
-**Query Parameters for `GET /api/leaderboard`:**
-| Parameter | Type   | Default | Description                     |
-|-----------|--------|---------|---------------------------------|
-| search    | string | —       | Search by username/display name |
-| page      | number | 1       | Page number                     |
-| limit     | number | 20      | Results per page                |
-
----
-
-### Achievements (`/api/achievements`)
-
-| Method | Endpoint                     | Auth | Description                          |
-|--------|------------------------------|------|--------------------------------------|
-| GET    | `/api/achievements`          | No   | List all available achievements      |
-| GET    | `/api/achievements/user/:id` | No   | Get achievements earned by a user    |
-
----
-
-### Tags (`/api/tags`)
-
-| Method | Endpoint     | Auth | Description            |
-|--------|--------------|------|------------------------|
-| GET    | `/api/tags`  | No   | List all problem tags  |
-
----
-
-## Technologies Used
-
-| Technology         | Version  | Purpose                         |
-|--------------------|----------|---------------------------------|
-| Node.js            | v22+     | JavaScript runtime              |
-| Express.js         | v5.2.1   | Web framework & REST API        |
-| pg (node-postgres) | v8.22.0  | PostgreSQL client               |
-| Firebase Admin SDK | v14.1.0  | Server-side token verification  |
-| Axios              | v1.18.0  | HTTP client (Judge0 API calls)  |
-| dotenv             | v17.4.2  | Environment variable management |
-| cors               | v2.8.6   | Cross-origin request handling   |
-| nodemon            | v3.1.14  | Auto-restart during development |
-
-## External Services
-
-| Service                | Purpose                          |
-|------------------------|----------------------------------|
-| Judge0 CE (Public API) | Online code execution & judging  |
-| Firebase Auth          | User identity & token management |
-| NeonDB                 | Serverless PostgreSQL hosting    |
+5. **Start Production Server**:
+   ```bash
+   npm start
+   ```
