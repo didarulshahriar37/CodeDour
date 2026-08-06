@@ -5,7 +5,6 @@ const syncUser = async(req, res, next) => {
         const {uid, email, name, picture} = req.user;
         const fullName = req.body?.fullName;
 
-        // Use fullName from request body, fallback to Firebase name, then email
         const displayName = fullName || name || email.split('@')[0];
         const username = email.split('@')[0];
         const avatar = picture || null;
