@@ -43,7 +43,6 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
             <Code2 className="h-5 w-5 text-white" />
@@ -53,7 +52,6 @@ export default function Navbar() {
           </span>
         </Link>
  
-        {/* Links */}
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <Link
@@ -69,7 +67,6 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Admin Link - ONLY shown for Admin */}
           {isAdmin && (
             <Link
               to="/admin"
@@ -83,7 +80,6 @@ export default function Navbar() {
           )}
         </div>
  
-        {/* Auth */}
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <div className="relative" ref={dropdownRef}>
@@ -112,7 +108,6 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-800 bg-slate-900 py-2 shadow-xl">
                   {isAdmin && (

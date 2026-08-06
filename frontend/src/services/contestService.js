@@ -1,9 +1,5 @@
 import api from "./api";
  
-/**
- * status: "running" | "upcoming" | "past" | undefined (all)
- * Matches the three sections on the Contests page.
- */
 async function getContests(status) {
   const { data } = await api.get("/contests", { params: { status } });
   return data;
@@ -29,14 +25,11 @@ async function getContestProblems(id) {
   return data;
 }
  
-// Backed by database/views/contest_leaderboard_matview.sql
 async function getContestLeaderboard(id) {
   const { data } = await api.get(`/contests/${id}/leaderboard`);
   return data;
 }
  
-// Backed by database/functions/update_contest_ratings.sql (runs server-side
-// once a contest ends); this just reads the resulting standings.
 async function getContestResults(id) {
   const { data } = await api.get(`/contests/${id}/results`);
   return data;

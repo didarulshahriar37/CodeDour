@@ -15,7 +15,6 @@ function LandingPage() {
           className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]"
         />
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
-          {/* Left: copy */}
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
               <Zap className="h-3.5 w-3.5" />
@@ -41,10 +40,8 @@ function LandingPage() {
             </div>
           </div>
 
-          {/* Right: code editor mockup */}
           <div className="relative">
             <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 shadow-2xl shadow-black/40">
-              {/* window bar */}
               <div className="flex items-center gap-2 border-b border-slate-800 bg-slate-900 px-4 py-3">
                 <span className="h-3 w-3 rounded-full bg-red-500/80" />
                 <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
@@ -54,7 +51,6 @@ function LandingPage() {
                   solution.cpp
                 </span>
               </div>
-              {/* code body */}
               <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
                 <code className="font-mono">
                   <span className="text-pink-400">#include</span>{" "}
@@ -72,7 +68,6 @@ function LandingPage() {
                   {"}"}
                 </code>
               </pre>
-              {/* verdict bar */}
               <div className="flex items-center gap-2 border-t border-slate-800 bg-slate-900 px-5 py-3">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 <span className="text-sm font-medium text-emerald-400">
@@ -87,7 +82,6 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* ================= About CodeDour ================= */}
       <section className="relative flex min-h-[calc(100vh-4rem)] items-center py-12 bg-gradient-to-b from-slate-950 via-slate-900/30 to-slate-950">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center">

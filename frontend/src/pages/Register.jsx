@@ -35,12 +35,10 @@ export default function Register() {
  
     setSubmitting(true);
     try {
-      // Generate username from email
       const username = email.split('@')[0];
       await register(email, password, username, fullName);
       navigate("/", { replace: true });
     } catch (err) {
-      // Handle Firebase auth errors
       let errorMessage = "Couldn't create your account. Try again.";
       
       if (err.message?.includes('auth/email-already-in-use')) {
@@ -75,7 +73,6 @@ export default function Register() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-12 text-white">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="mb-8 flex justify-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">

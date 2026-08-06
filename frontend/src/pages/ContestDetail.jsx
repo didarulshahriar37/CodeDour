@@ -70,8 +70,6 @@ export default function ContestDetail() {
     };
   }, [id]);
  
-  // Leaderboard is fetched lazily — only once the tab is opened, since it's
-  // a materialized view query that's heavier than the contest/problem lookup.
   useEffect(() => {
     if (activeTab !== "leaderboard" || leaderboard.length) return;
  
@@ -81,9 +79,7 @@ export default function ContestDetail() {
       .then((data) => {
         if (!cancelled) setLeaderboard(data);
       })
-      .catch(() => {
-        // Leaderboard failing shouldn't block the rest of the page.
-      });
+      .catch(() => {});
  
     return () => {
       cancelled = true;

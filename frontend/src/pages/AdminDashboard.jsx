@@ -48,7 +48,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="flex w-full flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
-        {/* Sidebar */}
         <aside className="w-full lg:w-72 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/40 p-6 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-hidden">
           <div className="flex items-center gap-3 pb-6 border-b border-slate-800/80 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 font-bold text-white shadow-lg">
@@ -89,7 +88,6 @@ export default function AdminDashboard() {
           </nav>
         </aside>
 
-        {/* Main Content Area */}
         <main className="flex-1 min-w-0 p-6 lg:p-8">
           {activeTab === "users" ? <UserManagement /> : <ProblemsManagement />}
         </main>
@@ -98,7 +96,6 @@ export default function AdminDashboard() {
   );
 }
 
-// ---------------- USER MANAGEMENT TAB ----------------
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +157,6 @@ function UserManagement() {
           <p className="text-sm text-slate-400">View and manage user accounts and administrator permissions.</p>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input
@@ -269,17 +265,14 @@ function UserManagement() {
   );
 }
 
-// ---------------- PROBLEMS MANAGEMENT TAB ----------------
 function ProblemsManagement() {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actionMessage, setActionMessage] = useState(null);
 
-  // Available tags list
   const [allTags, setAllTags] = useState([]);
 
-  // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProblem, setEditingProblem] = useState(null);
   const [formData, setFormData] = useState({
@@ -309,7 +302,6 @@ function ProblemsManagement() {
 
   useEffect(() => {
     fetchProblems();
-    // Fetch all tags from backend API via api instance
     api.get("/tags")
       .then((res) => setAllTags(res.data.tags || []))
       .catch((err) => console.error("Failed to fetch tags:", err));
@@ -444,7 +436,6 @@ function ProblemsManagement() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input
@@ -546,7 +537,6 @@ function ProblemsManagement() {
         </div>
       )}
 
-      {/* Create / Edit Problem Modal */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm overflow-y-auto"
@@ -706,7 +696,6 @@ function ProblemsManagement() {
                   </div>
                 </div>
 
-                {/* Test Cases Section */}
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold uppercase text-slate-400">

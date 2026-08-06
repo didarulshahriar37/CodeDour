@@ -68,7 +68,6 @@ export default function Problems() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Header */}
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-10">
           <h1 className="text-4xl font-bold">Problems</h1>
@@ -78,9 +77,7 @@ export default function Problems() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="mx-auto mt-8 flex max-w-7xl flex-col gap-4 px-6 md:flex-row">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
           <input
@@ -92,7 +89,6 @@ export default function Problems() {
           />
         </div>
 
-        {/* Difficulty */}
         <div className="relative">
           <Filter className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" />
           <select
@@ -108,7 +104,6 @@ export default function Problems() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="mx-auto mt-8 max-w-7xl px-6">
         <div className="overflow-hidden rounded-xl border border-slate-800">
           <table className="w-full">
@@ -197,7 +192,6 @@ export default function Problems() {
         </div>
       </div>
 
-      {/* Footer Stats */}
       <div className="mx-auto mt-10 max-w-7xl px-6 pb-10">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">

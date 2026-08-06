@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
  
-  // Subscribe once on mount; Firebase persists the session across reloads.
   useEffect(() => {
     const unsubscribe = authService.onAuthChange(async (user) => {
       setFirebaseUser(user);
@@ -19,8 +18,6 @@ export function AuthProvider({ children }) {
           const data = await authService.getProfile();
           setProfile(data);
         } catch (err) {
-          // Firebase account exists but no matching Postgres row yet
-          // (e.g. register() partially failed) — surface it, don't crash.
           setError(err);
           setProfile(null);
         }
@@ -97,7 +94,6 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
  
-// Usage: const { profile, isAuthenticated, login, logout } = useAuth();
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");

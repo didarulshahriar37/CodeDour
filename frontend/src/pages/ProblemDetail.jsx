@@ -25,79 +25,79 @@ const LANGUAGES = [
     id: "c",
     label: "C (GCC)",
     judge0Id: 50,
-    starter: `#include <stdio.h>\n\nint main() {\n    // your code here\n    return 0;\n}\n`,
+    starter: `#include <stdio.h>\n\nint main() {\n    \n    return 0;\n}\n`,
   },
   {
     id: "cpp",
     label: "C++ 17",
     judge0Id: 54,
-    starter: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // your code here\n    return 0;\n}\n`,
+    starter: `#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}\n`,
   },
   {
     id: "python",
     label: "Python 3",
     judge0Id: 71,
-    starter: `import sys\n\ndef solve():\n    # your code here\n    pass\n\nif __name__ == '__main__':\n    solve()\n`,
+    starter: `import sys\n\ndef solve():\n    \n    pass\n\nif __name__ == '__main__':\n    solve()\n`,
   },
   {
     id: "java",
     label: "Java 17",
     judge0Id: 62,
-    starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // your code here\n    }\n}\n`,
+    starter: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}\n`,
   },
   {
     id: "javascript",
     label: "JavaScript (Node.js)",
     judge0Id: 63,
-    starter: `const fs = require('fs');\n// your code here\n`,
+    starter: `const fs = require('fs');\n\n`,
   },
   {
     id: "typescript",
     label: "TypeScript",
     judge0Id: 74,
-    starter: `import * as fs from 'fs';\n// your code here\n`,
+    starter: `import * as fs from 'fs';\n\n`,
   },
   {
     id: "csharp",
     label: "C#",
     judge0Id: 51,
-    starter: `using System;\n\nclass Program {\n    static void Main() {\n        // your code here\n    }\n}\n`,
+    starter: `using System;\n\nclass Program {\n    static void Main() {\n        \n    }\n}\n`,
   },
   {
     id: "go",
     label: "Go",
     judge0Id: 60,
-    starter: `package main\nimport "fmt"\n\nfunc main() {\n    // your code here\n}\n`,
+    starter: `package main\nimport "fmt"\n\nfunc main() {\n    \n}\n`,
   },
   {
     id: "rust",
     label: "Rust",
     judge0Id: 73,
-    starter: `use std::io;\n\nfn main() {\n    // your code here\n}\n`,
+    starter: `use std::io;\n\nfn main() {\n    \n}\n`,
   },
   {
     id: "php",
     label: "PHP",
     judge0Id: 68,
-    starter: `<?php\n// your code here\n`,
+    starter: `<?php\n\n`,
   },
   {
     id: "ruby",
     label: "Ruby",
     judge0Id: 72,
-    starter: `# your code here\n`,
+    starter: `\n\n`,
   },
   {
     id: "kotlin",
     label: "Kotlin",
     judge0Id: 78,
-    starter: `# your code here\n`,
+    starter: `\n\n`,
   },
   {
     id: "swift",
     label: "Swift",
     judge0Id: 83,
-    starter: `import Foundation\n// your code here\n`,
+    starter: `import Foundation\n\n`,
   },
 ];
 
@@ -128,7 +128,7 @@ export default function ProblemDetail() {
   );
   const [activeExample, setActiveExample] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [runState, setRunState] = useState("idle"); // idle | running | passed | failed
+  const [runState, setRunState] = useState("idle");
   const [verdict, setVerdict] = useState(null);
 
   const language = LANGUAGES.find((l) => l.id === languageId);
@@ -243,11 +243,9 @@ export default function ProblemDetail() {
         results: res.results || []
       });
 
-      // Refresh global profile state and submissions list instantly
       refreshProfile().catch(() => {});
       fetchSubmissions().catch(() => {});
 
-      // Fetch tag-based recommendations on Accepted
       if (isAccepted) {
         setLoadingRecs(true);
         problemService
@@ -287,9 +285,7 @@ export default function ProblemDetail() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Split layout */}
       <div className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-2">
-        {/* Left: statement */}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold">{problem.title}</h1>
@@ -331,7 +327,6 @@ export default function ProblemDetail() {
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="mt-6 flex gap-6 border-b border-slate-800">
             {[
               { id: "description", label: "Description", icon: FileText },
@@ -384,7 +379,6 @@ export default function ProblemDetail() {
                 </div>
               )}
               
-              {/* Sample Test Cases */}
               {sampleTestCases.length > 0 && (
                 <div>
                   <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -541,10 +535,8 @@ export default function ProblemDetail() {
           )}
         </div>
 
-        {/* Right: editor */}
         <div className="flex min-w-0 flex-col">
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80">
-            {/* editor toolbar */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-red-500/80" />
@@ -573,7 +565,6 @@ export default function ProblemDetail() {
               </button>
             </div>
 
-            {/* code area */}
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -581,7 +572,6 @@ export default function ProblemDetail() {
               className="h-80 w-full resize-none bg-transparent p-5 font-mono text-sm leading-relaxed text-slate-200 outline-none"
             />
 
-            {/* actions */}
             <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-3">
               <button
                 onClick={handleRun}
@@ -594,7 +584,6 @@ export default function ProblemDetail() {
             </div>
           </div>
 
-          {/* verdict console */}
           <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/80 transition-all duration-300">
             <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3 text-xs font-medium text-slate-500">
               <Terminal size={14} />
@@ -639,7 +628,6 @@ export default function ProblemDetail() {
                 </div>
               )}
 
-              {/* Up Next recommendations banner */}
               {runState === "passed" && (
                 <div className="mt-5 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 via-indigo-500/5 to-violet-500/5 p-5">
                   <div className="flex items-center gap-2 mb-4">
