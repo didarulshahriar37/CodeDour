@@ -355,6 +355,7 @@ export default function ProblemDetail() {
           {activeTab === "description" ? (
             <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-300">
               <p className="whitespace-pre-line">{problem.description}</p>
+              
 
               {problem.input_format && (
                 <div>
@@ -364,7 +365,7 @@ export default function ProblemDetail() {
                   <p className="whitespace-pre-line">{problem.input_format}</p>
                 </div>
               )}
-
+              
               {problem.output_format && (
                 <div>
                   <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -374,6 +375,15 @@ export default function ProblemDetail() {
                 </div>
               )}
 
+              {problem.constraints && (
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Constraints
+                  </h3>
+                  <p className="whitespace-pre-line text-slate-400">{problem.constraints}</p>
+                </div>
+              )}
+              
               {/* Sample Test Cases */}
               {sampleTestCases.length > 0 && (
                 <div>
@@ -427,14 +437,6 @@ export default function ProblemDetail() {
                 </div>
               )}
 
-              {problem.constraints && (
-                <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Constraints
-                  </h3>
-                  <p className="whitespace-pre-line text-slate-400">{problem.constraints}</p>
-                </div>
-              )}
             </div>
           ) : (
             <div className="mt-6 space-y-4">
@@ -534,7 +536,8 @@ export default function ProblemDetail() {
                     Close
                   </button>
                 </div>
-              </div>            </div>
+              </div>            
+            </div>
           )}
         </div>
 
