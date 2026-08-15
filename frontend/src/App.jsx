@@ -10,8 +10,9 @@ import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
 import Submissions from "./pages/Submissions";
+import Leaderboard from "./pages/Leaderboard";
 import AdminDashboard from "./pages/AdminDashboard";
-
+ 
 function App() {
   return (
     <BrowserRouter>
@@ -22,12 +23,14 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:id" element={<Profile />} />
             <Route path="/my-submissions" element={<Submissions />} />
             <Route path="/problems" element={<Problems />} />
             <Route path="/problems/:id" element={<ProblemDetail />} />
             <Route path="/contests" element={<Contests />} />
             <Route path="/contests/:id" element={<ContestDetail />} />
             <Route path="/submissions" element={<Submissions />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
         </Routes>
@@ -35,5 +38,6 @@ function App() {
     </BrowserRouter>
   );
 }
-
+ 
 export default App;
+ 
