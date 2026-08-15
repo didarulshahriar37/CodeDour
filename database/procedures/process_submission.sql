@@ -1,5 +1,3 @@
--- CodeDour Procedures: Process Submission Results
-
 CREATE OR REPLACE PROCEDURE process_submission(
     p_submission_id INT,
     p_status VARCHAR(30),
