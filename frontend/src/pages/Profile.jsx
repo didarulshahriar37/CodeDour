@@ -1,38 +1,59 @@
 import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { User, Mail, Calendar, Award, Code2 } from "lucide-react";
-import { Link } from "react-router-dom";
-
+import { User, Mail, Calendar, Award, Code2, ArrowLeft } from "lucide-react";
+import userService from "../services/userService";
+ 
 export default function Profile() {
+  const { id } = useParams();
   const { firebaseUser, profile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState(null);
+  const [viewedProfile, setViewedProfile] = useState(null);
+ 
+  // Viewing someone else's profile via /profile/:id
+  const isOwnProfile = !id;
+ 
   useEffect(() => {
     const loadProfile = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        if (firebaseUser) {
-          await refreshProfile();
+        if (isOwnProfile) {
+          if (firebaseUser) {
+            await refreshProfile();
+          }
+        } else {
+          const data = await userService.getUserProfile(id);
+          setViewedProfile(data);
         }
-      } catch (error) {
-        console.error("Failed to load profile:", error);
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+        if (!isOwnProfile) {
+          setError("This user could not be found.");
+        }
       } finally {
         setLoading(false);
       }
     };
-
+ 
     loadProfile();
-  }, [firebaseUser]);
-
-  const username = profile?.username || firebaseUser?.email?.split('@')[0];
-
+  }, [firebaseUser, id, isOwnProfile]);
+ 
+  const source = isOwnProfile ? profile : viewedProfile;
+ 
+  const username = source?.username || (isOwnProfile ? firebaseUser?.email?.split("@")[0] : "");
+ 
   useEffect(() => {
     if (username) {
-      document.title = `${username} - Profile | CodeDour`;
+      document.title = isOwnProfile
+        ? `${username} - Profile | CodeDour`
+        : `${username} | CodeDour`;
     } else {
       document.title = "My Profile | CodeDour";
     }
-  }, [username]);
-
+  }, [username, isOwnProfile]);
+ 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
@@ -40,20 +61,51 @@ export default function Profile() {
       </div>
     );
   }
-
-  const displayName = firebaseUser?.displayName || profile?.display_name || "User";
-  const email = firebaseUser?.email || profile?.email || "";
-  const photoURL = firebaseUser?.photoURL || profile?.avatar_url || "";
-  const problemsSolved = profile?.problems_solved || 0;
-  const totalSubmissions = profile?.total_submissions || 0;
-  const rating = profile?.rating ?? 0;
-  const maxRating = profile?.max_rating ?? rating;
-  const createdAt = profile?.created_at || firebaseUser?.metadata?.creationTime;
-
+ 
+  if (!isOwnProfile && error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 text-white">
+        <p className="text-slate-400">{error}</p>
+        <Link
+          to="/leaderboard"
+          className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800 transition"
+        >
+          <ArrowLeft size={16} />
+          Back to Leaderboard
+        </Link>
+      </div>
+    );
+  }
+ 
+  const displayName = isOwnProfile
+    ? firebaseUser?.displayName || profile?.display_name || "User"
+    : viewedProfile?.display_name || viewedProfile?.username || "User";
+  const email = isOwnProfile ? firebaseUser?.email || profile?.email || "" : "";
+  const photoURL = isOwnProfile
+    ? firebaseUser?.photoURL || profile?.avatar_url || ""
+    : viewedProfile?.avatar_url || "";
+  const problemsSolved = source?.problems_solved || 0;
+  const totalSubmissions = source?.total_submissions || 0;
+  const rating = source?.rating ?? 0;
+  const maxRating = source?.max_rating ?? rating;
+  const createdAt = isOwnProfile
+    ? profile?.created_at || firebaseUser?.metadata?.creationTime
+    : null;
+ 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Profile Content */}
       <div className="mx-auto max-w-5xl px-6 py-12">
+        {!isOwnProfile && (
+          <Link
+            to="/leaderboard"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition"
+          >
+            <ArrowLeft size={16} />
+            Back to Leaderboard
+          </Link>
+        )}
+ 
         {/* Profile Header Card */}
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-8">
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
@@ -74,17 +126,19 @@ export default function Profile() {
                 {rating}
               </div>
             </div>
-
+ 
             {/* Profile Info */}
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold">{displayName}</h1>
               <p className="mt-1 text-slate-400">@{username}</p>
-
+ 
               <div className="mt-4 flex flex-wrap gap-4 justify-center md:justify-start">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <Mail className="h-4 w-4" />
-                  {email}
-                </div>
+                {email && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Mail className="h-4 w-4" />
+                    {email}
+                  </div>
+                )}
                 {createdAt && (
                   <div className="flex items-center gap-2 text-sm text-slate-400">
                     <Calendar className="h-4 w-4" />
@@ -95,7 +149,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
-
+ 
         {/* Stats Grid */}
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {/* Problems Solved */}
@@ -110,25 +164,39 @@ export default function Profile() {
               </div>
             </div>
           </div>
-
+ 
           {/* Total Submissions */}
-          <Link
-            to="/submissions"
-            className="group rounded-xl border border-slate-800 bg-slate-900/60 p-6 transition hover:border-indigo-500/50 hover:bg-slate-900/90 block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-500/10 p-3 transition group-hover:bg-indigo-500/20">
-                <Code2 className="h-6 w-6 text-indigo-400" />
+          {isOwnProfile ? (
+            <Link
+              to="/submissions"
+              className="group rounded-xl border border-slate-800 bg-slate-900/60 p-6 transition hover:border-indigo-500/50 hover:bg-slate-900/90 block"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-indigo-500/10 p-3 transition group-hover:bg-indigo-500/20">
+                  <Code2 className="h-6 w-6 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-indigo-400">{totalSubmissions}</p>
+                  <p className="text-sm text-slate-400 group-hover:text-slate-200 transition">
+                    Total Submissions <span className="text-indigo-400 ml-1">→</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-indigo-400">{totalSubmissions}</p>
-                <p className="text-sm text-slate-400 group-hover:text-slate-200 transition">
-                  Total Submissions <span className="text-indigo-400 ml-1">→</span>
-                </p>
+            </Link>
+          ) : (
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-indigo-500/10 p-3">
+                  <Code2 className="h-6 w-6 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-indigo-400">{totalSubmissions}</p>
+                  <p className="text-sm text-slate-400">Total Submissions</p>
+                </div>
               </div>
             </div>
-          </Link>
-
+          )}
+ 
           {/* Rating */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
             <div className="flex items-center gap-3">
@@ -142,9 +210,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
-
+ 
         {/* Additional Info */}
-        {profile && (
+        {source && (
           <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
             <h2 className="text-xl font-bold mb-4">Statistics</h2>
             <div className="grid gap-4 md:grid-cols-2">
@@ -167,3 +235,4 @@ export default function Profile() {
     </div>
   );
 }
+ 
