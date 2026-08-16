@@ -662,7 +662,6 @@ function ProblemsManagement() {
                   />
                 </div>
 
-                {/* Tags Selection */}
                 <div>
                   <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">Problem Tags</label>
                   <div className="flex flex-wrap gap-2 rounded-xl border border-slate-800 bg-slate-950 p-3 max-h-40 overflow-y-auto">

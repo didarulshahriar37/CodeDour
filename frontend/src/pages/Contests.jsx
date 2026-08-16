@@ -58,7 +58,6 @@ export default function Contests() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
  
-      {/* Hero */}
  
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-14">
@@ -80,7 +79,6 @@ export default function Contests() {
  
       <div className="mx-auto max-w-7xl px-6 py-10">
  
-        {/* Running Contest */}
  
         <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-r from-indigo-900/40 to-slate-900 p-8">
  
@@ -124,7 +122,6 @@ export default function Contests() {
  
         </div>
  
-        {/* Upcoming */}
  
         <h2 className="mt-14 mb-6 text-2xl font-bold">
           Upcoming Contests
@@ -179,7 +176,6 @@ export default function Contests() {
  
         </div>
  
-        {/* Past */}
  
         <h2 className="mt-14 mb-6 text-2xl font-bold">
           Past Contests

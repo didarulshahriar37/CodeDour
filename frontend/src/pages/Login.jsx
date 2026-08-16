@@ -50,7 +50,6 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="mb-8 flex justify-center">
           <Link to="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
