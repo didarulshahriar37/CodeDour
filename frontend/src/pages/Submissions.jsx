@@ -111,7 +111,6 @@ export default function Submissions() {
  
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Header */}
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-10">
           <h1 className="text-4xl font-bold">Submissions</h1>
@@ -121,7 +120,6 @@ export default function Submissions() {
         </div>
       </div>
  
-      {/* Filters */}
       <div className="mx-auto mt-8 flex max-w-7xl flex-col gap-4 px-6 md:flex-row">
         <div className="relative">
           <Filter className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" />
@@ -160,7 +158,6 @@ export default function Submissions() {
         </div>
       </div>
  
-      {/* Table */}
       <div className="mx-auto mt-8 max-w-7xl px-6">
         <div className="overflow-hidden rounded-xl border border-slate-800">
           <table className="w-full">
@@ -245,7 +242,6 @@ export default function Submissions() {
           </table>
         </div>
  
-        {/* Pagination */}
         {!loading && !error && submissions.length > 0 && (
           <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
             <span>
@@ -273,7 +269,6 @@ export default function Submissions() {
         )}
       </div>
 
-      {/* Code Modal */}
       {selectedSubmission && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
@@ -283,7 +278,6 @@ export default function Submissions() {
             className="w-full max-w-3xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-white">
@@ -303,7 +297,6 @@ export default function Submissions() {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -331,7 +324,6 @@ export default function Submissions() {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="flex justify-end border-t border-slate-800 px-6 py-3">
               <button
                 onClick={() => setSelectedSubmission(null)}

@@ -11,7 +11,6 @@ export default function Profile() {
   const [error, setError] = useState(null);
   const [viewedProfile, setViewedProfile] = useState(null);
  
-  // Viewing someone else's profile via /profile/:id
   const isOwnProfile = !id;
  
   useEffect(() => {
@@ -94,7 +93,6 @@ export default function Profile() {
  
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Profile Content */}
       <div className="mx-auto max-w-5xl px-6 py-12">
         {!isOwnProfile && (
           <Link
@@ -106,10 +104,8 @@ export default function Profile() {
           </Link>
         )}
  
-        {/* Profile Header Card */}
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-8">
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
-            {/* Profile Photo */}
             <div className="relative">
               {photoURL ? (
                 <img
@@ -127,7 +123,6 @@ export default function Profile() {
               </div>
             </div>
  
-            {/* Profile Info */}
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold">{displayName}</h1>
               <p className="mt-1 text-slate-400">@{username}</p>
@@ -150,9 +145,7 @@ export default function Profile() {
           </div>
         </div>
  
-        {/* Stats Grid */}
         <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {/* Problems Solved */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-green-500/10 p-3">
@@ -165,7 +158,6 @@ export default function Profile() {
             </div>
           </div>
  
-          {/* Total Submissions */}
           {isOwnProfile ? (
             <Link
               to="/submissions"
@@ -197,7 +189,6 @@ export default function Profile() {
             </div>
           )}
  
-          {/* Rating */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-yellow-500/10 p-3">
@@ -211,7 +202,6 @@ export default function Profile() {
           </div>
         </div>
  
-        {/* Additional Info */}
         {source && (
           <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
             <h2 className="text-xl font-bold mb-4">Statistics</h2>

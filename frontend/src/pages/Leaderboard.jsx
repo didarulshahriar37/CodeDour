@@ -61,7 +61,6 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
  
-  // Debounce search input -> avoid firing a request on every keystroke
   useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedSearch(search);
@@ -106,7 +105,6 @@ export default function Leaderboard() {
  
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Hero */}
  
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-14">
@@ -123,7 +121,6 @@ export default function Leaderboard() {
       </div>
  
       <div className="mx-auto max-w-7xl px-6 py-10">
-        {/* Podium */}
  
         {showPodium && (
           <div className="grid gap-6 md:grid-cols-3 md:items-end">
@@ -189,7 +186,6 @@ export default function Leaderboard() {
           </div>
         )}
  
-        {/* Search */}
  
         <div className={`${showPodium ? "mt-14" : "mt-2"} flex items-center justify-between gap-4`}>
           <h2 className="text-2xl font-bold">Full Rankings</h2>
@@ -209,7 +205,6 @@ export default function Leaderboard() {
           </div>
         </div>
  
-        {/* Table */}
  
         <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
           <table className="w-full">
@@ -295,7 +290,6 @@ export default function Leaderboard() {
           </table>
         </div>
  
-        {/* Pagination */}
  
         <div className="mt-6 flex items-center justify-between">
           <button

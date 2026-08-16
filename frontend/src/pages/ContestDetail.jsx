@@ -123,7 +123,6 @@ export default function ContestDetail() {
  
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Top bar */}
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-6xl px-6 py-4">
           <Link
@@ -136,7 +135,6 @@ export default function ContestDetail() {
         </div>
       </div>
  
-      {/* Hero */}
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-r from-indigo-900/40 to-slate-900 p-8">
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}>
@@ -192,7 +190,6 @@ export default function ContestDetail() {
           </div>
         </div>
  
-        {/* Tabs */}
         <div className="mt-10 flex gap-6 border-b border-slate-800">
           {[
             { id: "problems", label: "Problems", icon: CheckCircle2 },
@@ -213,7 +210,6 @@ export default function ContestDetail() {
           ))}
         </div>
  
-        {/* Problems tab */}
         {activeTab === "problems" && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full">
@@ -267,7 +263,6 @@ export default function ContestDetail() {
           </div>
         )}
  
-        {/* Leaderboard tab */}
         {activeTab === "leaderboard" && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full">
