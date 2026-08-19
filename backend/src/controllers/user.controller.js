@@ -82,4 +82,32 @@ const getUserSubmissions = async (req, res, next) => {
     }
 };
 
-module.exports = { getMyProfile, getUserById, getUserStats, getUserSubmissions };
+const updateProfile = async (req, res, next) => {
+    try {
+        const { uid } = req.user;
+        const { display_name, avatar_url } = req.body;
+
+        const result = await pool.query(`
+            UPDATE users
+            SET 
+                display_name = COALESCE($1, display_name),
+                avatar_url = COALESCE($2, avatar_url),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE firebase_uid = $3
+            RETURNING user_id, firebase_uid, username, email, display_name, avatar_url, role, rating, max_rating, problems_solved, total_submissions, created_at
+        `, [display_name || null, avatar_url || null, uid]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({
+            message: 'Profile updated successfully',
+            user: result.rows[0]
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getMyProfile, getUserById, getUserStats, getUserSubmissions, updateProfile };
