@@ -133,10 +133,46 @@ const deleteProblem = async (req, res, next) => {
     }
 };
 
+const refreshViews = async (req, res, next) => {
+    try {
+        await pool.query(`REFRESH MATERIALIZED VIEW contest_leaderboard_matview`);
+        res.status(200).json({ 
+            message: 'Materialized views refreshed successfully' 
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteContest = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query(
+            `DELETE FROM contests WHERE contest_id::text = $1 OR slug = $1 RETURNING contest_id, title`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Contest not found' 
+            });
+        }
+
+        res.status(200).json({ 
+            message: 'Contest deleted successfully', 
+            contest: result.rows[0] 
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllUsers,
     updateUserRole,
     deleteUser,
     updateProblem,
-    deleteProblem
+    deleteProblem,
+    refreshViews,
+    deleteContest
 };

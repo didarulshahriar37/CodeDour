@@ -6,7 +6,9 @@ const {
     updateUserRole,
     deleteUser,
     updateProblem,
-    deleteProblem
+    deleteProblem,
+    refreshViews,
+    deleteContest
 } = require('../controllers/admin.controller');
 
 router.use(verifyAdmin);
@@ -17,5 +19,8 @@ router.delete('/users/:id', deleteUser);
 
 router.put('/problems/:id', updateProblem);
 router.delete('/problems/:id', deleteProblem);
+
+router.delete('/contests/:id', deleteContest);
+router.post('/refresh-views', refreshViews);
 
 module.exports = router;

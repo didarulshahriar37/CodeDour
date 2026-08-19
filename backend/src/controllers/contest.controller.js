@@ -169,6 +169,50 @@ const recalculateContestRatings = async (req, res, next) => {
     }
 };
 
+const addProblemsToContest = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { problems } = req.body;
 
+        if (!problems || !Array.isArray(problems) || problems.length === 0) {
+            return res.status(400).json({ 
+                error: 'Problems array is required' 
+            });
+        }
 
-module.exports = { getAllContests, getContestById, createContest, joinContest, recalculateContestRatings };
+        const userRes = await pool.query(`SELECT user_id, role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+        if (userRes.rows.length === 0) return res.status(401).json({ 
+            error: 'User not found' 
+        });
+        const currentUser = userRes.rows[0];
+
+        const contestRes = await pool.query(`SELECT contest_id, created_by FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        if (contestRes.rows.length === 0) return res.status(404).json({ 
+            error: 'Contest not found' 
+        });
+        const contest = contestRes.rows[0];
+
+        if (contest.created_by !== currentUser.user_id && currentUser.role !== 'admin') {
+            return res.status(403).json({ 
+                error: 'Access denied. Only the contest host can add problems.' 
+            });
+        }
+
+        for (const item of problems) {
+            await pool.query(`
+                INSERT INTO contest_problems (contest_id, problem_id, problem_order, points)
+                VALUES ($1, $2, $3, COALESCE($4, 100))
+                ON CONFLICT (contest_id, problem_id) DO UPDATE 
+                SET problem_order = EXCLUDED.problem_order, points = EXCLUDED.points
+            `, [contest.contest_id, item.problem_id, item.problem_order || 'A', item.points || 100]);
+        }
+
+        res.status(200).json({ 
+            message: 'Problems added to contest successfully' 
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getAllContests, getContestById, createContest, joinContest, recalculateContestRatings, addProblemsToContest };
