@@ -2,9 +2,23 @@ const pool = require('../config/db');
 
 const getAllContests = async (req, res, next) => {
     try {
-        res.status(200).json({ 
-            message: 'not implemented yet' 
-        });
+        const { status } = req.query;
+        const result = await pool.query(` SELECT  c.contest_id, c.title, c.slug, c.description, c.start_time, c.end_time,c.duration_minutes,c.is_published,c.created_at, u.display_name AS created_by_name, COUNT(cp.user_id)::int AS participant_count,
+                CASE 
+                    WHEN NOW() < c.start_time THEN 'upcoming'
+                    WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
+                    ELSE 'ended'
+                END AS status
+            FROM contests c
+            LEFT JOIN users u ON c.created_by = u.user_id
+            LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id
+            WHERE c.is_published = TRUE GROUP BY c.contest_id, u.display_name ORDER BY c.start_time DESC
+        `);
+        let contests = result.rows;
+        if (status) {
+            contests = contests.filter(c => c.status === status);
+        }
+        res.status(200).json({ contests });
     } catch (error) {
         next(error);
     }
@@ -12,8 +26,36 @@ const getAllContests = async (req, res, next) => {
 
 const getContestById = async (req, res, next) => {
     try {
+        const { id } = req.params;
+        const contestResult = await pool.query(`
+            SELECT  c.contest_id,c.title, c.slug, c.description, c.start_time, c.end_time,c.duration_minutes,c.is_published,c.created_at,u.display_name AS created_by_name, COUNT(cp.user_id)::int AS participant_count,
+                CASE 
+                    WHEN NOW() < c.start_time THEN 'upcoming'
+                    WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
+                    ELSE 'ended'
+                END AS status
+            FROM contests c
+            LEFT JOIN users u ON c.created_by = u.user_id
+            LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id WHERE c.contest_id::text = $1 OR c.slug = $1 GROUP BY c.contest_id, u.display_name
+        `, [id]);
+
+        if (contestResult.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Contest not found' 
+            });
+        }
+
+        const contest = contestResult.rows[0];
+
+        const problemsResult = await pool.query(`
+            SELECT p.problem_id, p.slug, p.title, p.difficulty, cp.problem_order, cp.points
+            FROM contest_problems cp
+            JOIN problems p ON cp.problem_id = p.problem_id WHERE cp.contest_id = $1 ORDER BY cp.problem_order ASC
+        `, [contest.contest_id]);
+
         res.status(200).json({ 
-            message: 'not implemented yet' 
+            contest, 
+            problems: problemsResult.rows 
         });
     } catch (error) {
         next(error);
@@ -22,8 +64,36 @@ const getContestById = async (req, res, next) => {
 
 const createContest = async (req, res, next) => {
     try {
+        const { title, description, start_time, end_time, duration_minutes, is_published = true, problems } = req.body;
+
+        if (!title || !start_time || !end_time || !duration_minutes) {
+            return res.status(400).json({ 
+                error: 'Title, start_time, end_time, and duration_minutes are required.' 
+            });
+        }
+
+        const userRes = await pool.query(`SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+        const createdBy = userRes.rows[0]?.user_id || null;
+
+        const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString().slice(-4);
+
+        const contestResult = await pool.query(`
+            INSERT INTO contests (title, slug, description, start_time, end_time, duration_minutes, is_published, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+        `, [title, slug, description || '', start_time, end_time, duration_minutes, is_published, createdBy]);
+
+        const newContest = contestResult.rows[0];
+
+        if (problems && Array.isArray(problems) && problems.length > 0) {
+            for (const item of problems) {
+                await pool.query(`
+                    INSERT INTO contest_problems (contest_id, problem_id, problem_order, points) VALUES ($1, $2, $3, COALESCE($4, 100)) ON CONFLICT DO NOTHING
+                `, [newContest.contest_id, item.problem_id, item.problem_order || 'A', item.points || 100]);
+            }
+        }
+
         res.status(201).json({ 
-            message: 'not implemented yet' 
+            message: 'Contest created successfully', 
+            contest: newContest 
         });
     } catch (error) {
         next(error);
@@ -32,8 +102,31 @@ const createContest = async (req, res, next) => {
 
 const joinContest = async (req, res, next) => {
     try {
+        const { id } = req.params;
+        const userRes = await pool.query(`SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'User not found' 
+            });
+        }
+        const userId = userRes.rows[0].user_id;
+
+        const contestRes = await pool.query(`SELECT contest_id, title FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        if (contestRes.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Contest not found' 
+            });
+        }
+        const contestId = contestRes.rows[0].contest_id;
+
+        await pool.query(`
+            INSERT INTO contest_participants (contest_id, user_id) VALUES ($1, $2) ON CONFLICT (contest_id, user_id) DO NOTHING
+        `, [contestId, userId]);
+
         res.status(200).json({ 
-            message: 'not implemented yet' 
+            message: 'Successfully registered for the contest',
+            contest_id: contestId,
+            user_id: userId
         });
     } catch (error) {
         next(error);
