@@ -27,11 +27,10 @@ const rankStyle = (rank) => {
 };
  
 export default function Leaderboard() {
-  const [activeTab, setActiveTab] = useState("global"); // "global" | "contest"
+  const [activeTab, setActiveTab] = useState("global");
  
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Header */}
       <div className="border-b border-slate-800">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <div className="flex items-center gap-3">
@@ -43,7 +42,6 @@ export default function Leaderboard() {
             specific contest.
           </p>
  
-          {/* Tabs */}
           <div className="mt-8 flex gap-2">
             <button
               onClick={() => setActiveTab("global")}
@@ -127,7 +125,6 @@ function GlobalLeaderboard() {
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-        {/* Timeframe filter */}
         <div className="flex gap-2">
           {TIMEFRAMES.map((tf) => (
             <button
@@ -147,7 +144,6 @@ function GlobalLeaderboard() {
           ))}
         </div>
         
-        {/* Search bar */}
         <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
           <input
             type="text"
@@ -214,7 +210,6 @@ function GlobalLeaderboard() {
             </table>
           </div>
  
-          {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
             <span>
               Page {page} of {totalPages} · {total} ranked users
@@ -256,7 +251,6 @@ function ContestLeaderboardTab() {
   const [contestsLoading, setContestsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load contests first
   useEffect(() => {
     let cancelled = false;
     async function loadContests() {
@@ -277,7 +271,6 @@ function ContestLeaderboardTab() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load contest leaderboard when contest is selected
   useEffect(() => {
     if (!selectedContest) return;
     
@@ -334,7 +327,6 @@ function ContestLeaderboardTab() {
 
   return (
     <>
-      {/* Contest selector and search bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
         <select
           value={selectedContest?.contest_id || ''}
@@ -352,7 +344,6 @@ function ContestLeaderboardTab() {
           ))}
         </select>
         
-        {/* Search bar */}
         <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
           <input
             type="text"
@@ -423,7 +414,6 @@ function ContestLeaderboardTab() {
             </table>
           </div>
 
-          {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
             <span>
               Page {page} of {totalPages} · {total} participants

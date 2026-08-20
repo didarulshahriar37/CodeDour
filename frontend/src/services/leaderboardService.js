@@ -49,7 +49,7 @@ async function getContestLeaderboard(params = {}) {
  
 async function getUserRank(username) {
   const { data } = await api.get(`/leaderboard/${username}/rank`);
-  return data; // { rank, rating, percentile }
+  return data;
 }
  
 const leaderboardService = {
