@@ -79,15 +79,17 @@ export default function Leaderboard() {
 function GlobalLeaderboard() {
   const [timeframe, setTimeframe] = useState("all");
   const [page, setPage] = useState(1);
- 
+  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [entries, setEntries] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
- 
+
   useEffect(() => {
     let cancelled = false;
- 
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -96,6 +98,7 @@ function GlobalLeaderboard() {
           timeframe,
           page,
           pageSize: PAGE_SIZE,
+          search: searchQuery,
         });
         if (cancelled) return;
         setEntries(data.items);
@@ -106,35 +109,60 @@ function GlobalLeaderboard() {
         if (!cancelled) setLoading(false);
       }
     }
- 
+
     load();
     return () => {
       cancelled = true;
     };
-  }, [timeframe, page]);
+  }, [timeframe, page, searchQuery]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    setSearchQuery(search);
+  };
  
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
  
   return (
     <>
-      {/* Timeframe filter */}
-      <div className="flex gap-2">
-        {TIMEFRAMES.map((tf) => (
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+        {/* Timeframe filter */}
+        <div className="flex gap-2">
+          {TIMEFRAMES.map((tf) => (
+            <button
+              key={tf.value}
+              onClick={() => {
+                setPage(1);
+                setTimeframe(tf.value);
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                timeframe === tf.value
+                  ? "bg-indigo-500 text-white"
+                  : "border border-slate-800 text-slate-400 hover:border-slate-600 hover:text-white"
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Search bar */}
+        <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search users..."
+            className="flex-1 sm:w-64 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
           <button
-            key={tf.value}
-            onClick={() => {
-              setPage(1);
-              setTimeframe(tf.value);
-            }}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              timeframe === tf.value
-                ? "bg-indigo-500 text-white"
-                : "border border-slate-800 text-slate-400 hover:border-slate-600 hover:text-white"
-            }`}
+            type="submit"
+            className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition"
           >
-            {tf.label}
+            Search
           </button>
-        ))}
+        </form>
       </div>
  
       {loading && (
@@ -218,109 +246,160 @@ function GlobalLeaderboard() {
  
 function ContestLeaderboardTab() {
   const [contests, setContests] = useState([]);
-  const [loadingContests, setLoadingContests] = useState(true);
-  const [contestsError, setContestsError] = useState(null);
- 
   const [selectedContest, setSelectedContest] = useState(null);
-  const [standings, setStandings] = useState([]);
-  const [loadingStandings, setLoadingStandings] = useState(false);
-  const [standingsError, setStandingsError] = useState(null);
- 
-  // Load the contest list (running + ended) once.
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [entries, setEntries] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [contestsLoading, setContestsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load contests first
   useEffect(() => {
     let cancelled = false;
- 
-    async function load() {
-      setLoadingContests(true);
-      setContestsError(null);
+    async function loadContests() {
       try {
-        const data = await contestService.getContests();
+        const data = await contestService.getContests({ status: 'ended' });
         if (cancelled) return;
-        setContests(data.filter((c) => c.status === "running" || c.status === "past"));
+        setContests(data.contests || []);
+        if (data.contests?.length > 0 && !selectedContest) {
+          setSelectedContest(data.contests[0]);
+        }
       } catch (err) {
-        if (!cancelled) setContestsError(err.message || "Couldn't load contests.");
+        if (!cancelled) setError(err.message || "Couldn't load contests.");
       } finally {
-        if (!cancelled) setLoadingContests(false);
+        if (!cancelled) setContestsLoading(false);
       }
     }
- 
-    load();
-    return () => {
-      cancelled = true;
-    };
+    loadContests();
+    return () => { cancelled = true; };
   }, []);
- 
-  // Load standings whenever a contest is selected.
+
+  // Load contest leaderboard when contest is selected
   useEffect(() => {
     if (!selectedContest) return;
- 
+    
     let cancelled = false;
-    setLoadingStandings(true);
-    setStandingsError(null);
- 
-    contestService
-      .getContestLeaderboard(selectedContest.id)
-      .then((data) => {
-        if (!cancelled) setStandings(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setStandingsError(err.message || "Couldn't load standings.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingStandings(false);
-      });
- 
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedContest]);
- 
-  // ---- Standings view for the selected contest ----
-  if (selectedContest) {
+    async function loadLeaderboard() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await leaderboardService.getContestLeaderboard({
+          contestId: selectedContest.contest_id,
+          page,
+          pageSize: PAGE_SIZE,
+          search: searchQuery,
+        });
+        if (cancelled) return;
+        setEntries(data.items);
+        setTotal(data.total);
+      } catch (err) {
+        if (!cancelled) setError(err.message || "Couldn't load contest leaderboard.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadLeaderboard();
+    return () => { cancelled = true; };
+  }, [selectedContest, page, searchQuery]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    setSearchQuery(search);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  if (contestsLoading) {
     return (
-      <div>
-        <button
-          onClick={() => {
-            setSelectedContest(null);
-            setStandings([]);
+      <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
+        <Loader2 className="animate-spin" size={20} />
+        Loading contests...
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="mt-16 text-center text-red-400">{error}</div>;
+  }
+
+  if (!contests.length) {
+    return (
+      <div className="mt-16 text-center text-slate-500">No completed contests yet.</div>
+    );
+  }
+
+  return (
+    <>
+      {/* Contest selector and search bar */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+        <select
+          value={selectedContest?.contest_id || ''}
+          onChange={(e) => {
+            const contest = contests.find(c => c.contest_id.toString() === e.target.value);
+            setSelectedContest(contest);
+            setPage(1);
           }}
-          className="flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-white"
+          className="w-full sm:w-auto rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
-          <ChevronLeft size={16} />
-          Back to Contests
-        </button>
- 
-        <h2 className="mt-4 text-2xl font-bold">{selectedContest.title}</h2>
- 
-        {loadingStandings && (
-          <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
-            <Loader2 className="animate-spin" size={20} />
-            Loading standings...
-          </div>
-        )}
- 
-        {!loadingStandings && standingsError && (
-          <div className="mt-16 text-center text-red-400">{standingsError}</div>
-        )}
- 
-        {!loadingStandings && !standingsError && standings.length === 0 && (
-          <div className="mt-16 text-center text-slate-500">No standings yet.</div>
-        )}
- 
-        {!loadingStandings && !standingsError && standings.length > 0 && (
+          {contests.map(contest => (
+            <option key={contest.contest_id} value={contest.contest_id}>
+              {contest.title}
+            </option>
+          ))}
+        </select>
+        
+        {/* Search bar */}
+        <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search users..."
+            className="flex-1 sm:w-64 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+
+      {loading && (
+        <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
+          <Loader2 className="animate-spin" size={20} />
+          Loading standings...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="mt-16 text-center text-red-400">{error}</div>
+      )}
+
+      {!loading && !error && entries.length === 0 && (
+        <div className="mt-16 text-center text-slate-500">No standings yet.</div>
+      )}
+
+      {!loading && !error && entries.length > 0 && (
+        <>
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full">
               <thead className="bg-slate-900 text-left text-slate-400">
                 <tr>
                   <th className="px-6 py-4">Rank</th>
                   <th>Participant</th>
-                  <th>Rating</th>
-                  <th>Solved</th>
+                  <th>Score</th>
                   <th>Penalty</th>
+                  <th>Rating Change</th>
                 </tr>
               </thead>
               <tbody>
-                {standings.map((entry) => (
+                {entries.map((entry) => (
                   <tr
                     key={entry.rank}
                     className="border-t border-slate-800 hover:bg-slate-900/60 transition"
@@ -333,99 +412,43 @@ function ContestLeaderboardTab() {
                         {entry.username}
                       </Link>
                     </td>
-                    <td className="text-slate-400">{entry.rating}</td>
-                    <td className="text-slate-400">{entry.solvedCount}</td>
+                    <td className="text-slate-400">{entry.score}</td>
                     <td className="text-slate-400">{entry.penalty}</td>
+                    <td className={entry.newRating > entry.oldRating ? "text-green-400" : "text-red-400"}>
+                      {entry.newRating > entry.oldRating ? "+" : ""}{entry.newRating - entry.oldRating}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-    );
-  }
- 
-  // ---- Contest list ----
-  if (loadingContests) {
-    return (
-      <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
-        <Loader2 className="animate-spin" size={20} />
-        Loading contests...
-      </div>
-    );
-  }
- 
-  if (contestsError) {
-    return <div className="mt-16 text-center text-red-400">{contestsError}</div>;
-  }
- 
-  const running = contests.filter((c) => c.status === "running");
-  const past = contests.filter((c) => c.status === "past");
- 
-  return (
-    <div>
-      {running.length > 0 && (
-        <>
-          <h2 className="mb-4 text-lg font-bold">Running</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {running.map((contest) => (
-              <ContestCard
-                key={contest.id}
-                contest={contest}
-                onClick={() => setSelectedContest(contest)}
-                live
-              />
-            ))}
+
+          {/* Pagination */}
+          <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+            <span>
+              Page {page} of {totalPages} · {total} participants
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex items-center gap-1 rounded-lg border border-slate-800 px-3 py-2 hover:border-slate-600 disabled:opacity-40"
+              >
+                <ChevronLeft size={15} />
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="flex items-center gap-1 rounded-lg border border-slate-800 px-3 py-2 hover:border-slate-600 disabled:opacity-40"
+              >
+                Next
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
         </>
       )}
- 
-      <h2 className="mb-4 mt-10 text-lg font-bold">Ended</h2>
-      {past.length === 0 ? (
-        <p className="text-sm text-slate-500">No ended contests yet.</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {past.map((contest) => (
-            <ContestCard
-              key={contest.id}
-              contest={contest}
-              onClick={() => setSelectedContest(contest)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
- 
-function ContestCard({ contest, onClick, live }) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-xl border border-slate-800 bg-slate-900 p-5 text-left transition hover:border-indigo-500"
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">{contest.title}</h3>
-        {live && (
-          <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold">
-            LIVE
-          </span>
-        )}
-      </div>
-      <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1">
-          <Users size={13} />
-          {contest.participants}
-        </span>
-        {contest.duration && (
-          <span className="flex items-center gap-1">
-            <Clock3 size={13} />
-            {contest.duration}
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
- 

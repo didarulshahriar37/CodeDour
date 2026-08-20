@@ -24,6 +24,28 @@ async function getGlobalLeaderboard(params = {}) {
  
   return { items, total: items.length };
 }
+
+async function getContestLeaderboard(params = {}) {
+  const { contestId, page = 1, pageSize = 20, search = '' } = params;
+  const { data } = await api.get(`/leaderboard/contest/${contestId}`, { 
+    params: { page, limit: pageSize, search } 
+  });
+  const rows = data.leaderboard || [];
+  
+  const items = rows.map((row) => ({
+    rank: row.rank,
+    userId: row.user_id,
+    username: row.username,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url,
+    score: row.score,
+    penalty: row.penalty,
+    oldRating: row.old_rating,
+    newRating: row.new_rating,
+  }));
+
+  return { items, total: items.length };
+}
  
 async function getUserRank(username) {
   const { data } = await api.get(`/leaderboard/${username}/rank`);
@@ -32,9 +54,9 @@ async function getUserRank(username) {
  
 const leaderboardService = {
   getGlobalLeaderboard,
+  getContestLeaderboard,
   getUserRank,
 };
  
 export default leaderboardService;
-export { getGlobalLeaderboard, getUserRank };
- 
+export { getGlobalLeaderboard, getContestLeaderboard, getUserRank };
