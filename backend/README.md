@@ -158,10 +158,10 @@ Create a `.env` file in the `backend/` root directory:
 
 ```env
 PORT=5000
+
 DATABASE_URL=postgresql://neondb_owner:your_password@ep-example.eastus2.azure.neon.tech/neondb?sslmode=require
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"your_project_id",...}
-JUDGE0_API_URL=https://judge0-ce.p.rapidapi.com
-JUDGE0_API_KEY=your_rapidapi_judge0_key
+
+JUDGE0_API_URL=https://ce.judge0.com
 ```
 
 ---
