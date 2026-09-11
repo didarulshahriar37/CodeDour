@@ -71,6 +71,8 @@ export default function Problems() {
     }
   };
 
+  const hasActiveFilters = search.trim() !== "" || difficulty !== "All";
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-slate-800">
@@ -159,7 +161,9 @@ export default function Problems() {
                     colSpan={6}
                     className="px-6 py-16 text-center text-slate-500"
                   >
-                    No problems found in the database.
+                    {hasActiveFilters
+                      ? "No problems match your current search or filters."
+                      : "No problems found in the database."}
                   </td>
                 </tr>
               )}
