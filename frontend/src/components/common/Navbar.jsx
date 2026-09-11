@@ -2,33 +2,35 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Code2, ChevronDown, User, LogOut, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
- 
+
 const NAV_LINKS = [
   { label: "Problems", to: "/problems" },
   { label: "Contests", to: "/contests" },
   { label: "Leaderboard", to: "/leaderboard" },
 ];
- 
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { firebaseUser, profile, isAuthenticated, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
- 
+
   const isAdmin = profile?.role === "admin";
   const isActive = (to) => location.pathname.startsWith(to);
-  
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
- 
+
   async function handleLogout() {
     try {
       await logout();
@@ -38,10 +40,14 @@ export default function Navbar() {
       console.error("Failed to log out:", error);
     }
   }
- 
-  const displayName = firebaseUser?.displayName || firebaseUser?.email?.split("@")[0] || "User";
+
+  const displayName =
+    firebaseUser?.displayName ||
+    firebaseUser?.email?.split("@")[0] ||
+    "User";
+
   const photoURL = firebaseUser?.photoURL;
- 
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -49,11 +55,12 @@ export default function Navbar() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
             <Code2 className="h-5 w-5 text-white" />
           </span>
+
           <span className="text-lg font-semibold tracking-tight text-white">
             Code<span className="text-indigo-400">Dour</span>
           </span>
         </Link>
- 
+
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <Link
@@ -68,7 +75,7 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
- 
+
           {isAdmin && (
             <Link
               to="/admin"
@@ -81,12 +88,15 @@ export default function Navbar() {
             </Link>
           )}
         </div>
- 
+
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <div className="relative" ref={dropdownRef}>
               <button
+                type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
+                aria-label="Open user menu"
+                aria-expanded={dropdownOpen}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-slate-800"
               >
                 {photoURL ? (
@@ -100,16 +110,18 @@ export default function Navbar() {
                     {displayName.charAt(0).toUpperCase()}
                   </span>
                 )}
+
                 <span className="text-sm font-medium text-slate-200">
                   {displayName}
                 </span>
+
                 <ChevronDown
                   className={`h-4 w-4 text-slate-400 transition-transform ${
                     dropdownOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
- 
+
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-800 bg-slate-900 py-2 shadow-xl">
                   {isAdmin && (
@@ -122,6 +134,7 @@ export default function Navbar() {
                       Admin Dashboard
                     </Link>
                   )}
+
                   <Link
                     to="/profile"
                     onClick={() => setDropdownOpen(false)}
@@ -130,7 +143,9 @@ export default function Navbar() {
                     <User className="h-4 w-4" />
                     My Profile
                   </Link>
+
                   <button
+                    type="button"
                     onClick={handleLogout}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-slate-800 hover:text-red-300"
                   >
@@ -148,6 +163,7 @@ export default function Navbar() {
               >
                 Sign in
               </Link>
+
               <Link
                 to="/register"
                 className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
@@ -161,4 +177,3 @@ export default function Navbar() {
     </header>
   );
 }
- 
