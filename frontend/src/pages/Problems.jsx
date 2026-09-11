@@ -19,6 +19,7 @@ export default function Problems() {
   useEffect(() => {
     document.title = "Problems | CodeDour";
   }, []);
+
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,6 +30,7 @@ export default function Problems() {
     async function loadProblems() {
       setLoading(true);
       setError(null);
+
       try {
         const data = await problemService.getProblems({
           search: search || undefined,
@@ -36,13 +38,16 @@ export default function Problems() {
         });
 
         if (cancelled) return;
+
         setProblems(data.problems || data.items || []);
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Failed to load problems");
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -66,6 +71,8 @@ export default function Problems() {
     }
   };
 
+  const hasActiveFilters = search.trim() !== "" || difficulty !== "All";
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-slate-800">
@@ -80,8 +87,10 @@ export default function Problems() {
       <div className="mx-auto mt-8 flex max-w-7xl flex-col gap-4 px-6 md:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+
           <input
             type="text"
+            aria-label="Search problems"
             placeholder="Search problems..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -91,6 +100,7 @@ export default function Problems() {
 
         <div className="relative">
           <Filter className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" />
+
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value)}
@@ -121,8 +131,14 @@ export default function Problems() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center text-slate-500">
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={20} />
+                  <td
+                    colSpan={6}
+                    className="px-6 py-16 text-center text-slate-500"
+                  >
+                    <Loader2
+                      className="mx-auto mb-2 animate-spin"
+                      size={20}
+                    />
                     Loading problems...
                   </td>
                 </tr>
@@ -130,7 +146,10 @@ export default function Problems() {
 
               {!loading && error && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center text-red-400">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-16 text-center text-red-400"
+                  >
                     {error}
                   </td>
                 </tr>
@@ -138,8 +157,13 @@ export default function Problems() {
 
               {!loading && !error && problems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center text-slate-500">
-                    No problems found in the database.
+                  <td
+                    colSpan={6}
+                    className="px-6 py-16 text-center text-slate-500"
+                  >
+                    {hasActiveFilters
+                      ? "No problems match your current search or filters."
+                      : "No problems found in the database."}
                   </td>
                 </tr>
               )}
@@ -149,7 +173,7 @@ export default function Problems() {
                 problems.map((problem) => (
                   <tr
                     key={problem.problem_id || problem.id}
-                    className="border-t border-slate-800 hover:bg-slate-900/60 transition"
+                    className="border-t border-slate-800 transition hover:bg-slate-900/60"
                   >
                     <td className="px-6 py-5">
                       {problem.solved ? (
@@ -167,19 +191,40 @@ export default function Problems() {
                         : problem.category || "—"}
                     </td>
 
-                    <td className={`font-semibold ${difficultyColor(problem.difficulty)}`}>
+                    <td
+                      className={`font-semibold ${difficultyColor(
+                        problem.difficulty
+                      )}`}
+                    >
                       {problem.difficulty}
                     </td>
 
                     <td className="text-slate-300">
-                      {problem.solved_by_count ?? 0} {problem.solved_by_count === 1 ? "user" : "users"}
+                      {problem.solved_by_count ?? 0}{" "}
+                      {problem.solved_by_count === 1 ? "user" : "users"}
                     </td>
 
                     <td>
                       <Link
-                        to={isAuthenticated ? `/problems/${problem.problem_id || problem.id}` : "/login"}
-                        state={!isAuthenticated ? { from: { pathname: `/problems/${problem.problem_id || problem.id}` } } : undefined}
-                        className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400 w-fit"
+                        to={
+                          isAuthenticated
+                            ? `/problems/${
+                                problem.problem_id || problem.id
+                              }`
+                            : "/login"
+                        }
+                        state={
+                          !isAuthenticated
+                            ? {
+                                from: {
+                                  pathname: `/problems/${
+                                    problem.problem_id || problem.id
+                                  }`,
+                                },
+                              }
+                            : undefined
+                        }
+                        className="flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400"
                       >
                         Solve
                         <ArrowRight size={16} />
@@ -196,7 +241,7 @@ export default function Problems() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-3xl font-bold">{problems.length}</h2>
-            <p className="text-slate-400 mt-2">Total Problems</p>
+            <p className="mt-2 text-slate-400">Total Problems</p>
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
@@ -208,7 +253,8 @@ export default function Problems() {
 
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-3xl font-bold text-indigo-400">
-              {problems.length - problems.filter((p) => p.solved).length}
+              {problems.length -
+                problems.filter((p) => p.solved).length}
             </h2>
             <p className="mt-2 text-slate-400">Remaining</p>
           </div>
