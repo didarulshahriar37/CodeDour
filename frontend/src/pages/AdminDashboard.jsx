@@ -353,7 +353,7 @@ function ProblemsManagement() {
     setModalOpen(true);
 
     try {
-      const fullData = await problemService.getProblem(prob.problem_id);
+      const fullData = await problemService.getProblemById(prob.problem_id);
       if (fullData && fullData.test_cases && fullData.test_cases.length > 0) {
         setFormData((prev) => ({
           ...prev,
