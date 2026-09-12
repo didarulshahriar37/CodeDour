@@ -235,7 +235,7 @@ export default function Contests() {
                       to={`/contests/${contest.contest_id}`}
                       className="mt-6 flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2 font-medium transition hover:bg-indigo-400"
                     >
-                      Enter
+                      View Details
                       <Play size={16} />
                     </Link>
                   </div>

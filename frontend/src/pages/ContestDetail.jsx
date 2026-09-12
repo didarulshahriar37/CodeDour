@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import contestService from "../services/contestService";
 import { useAuth } from "../context/AuthContext";
+import submissionService from "../services/submissionService";
 
 const difficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -64,6 +65,7 @@ export default function ContestDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [membershipAction, setMembershipAction] = useState(null);
+  const [solvedProblemIds, setSolvedProblemIds] = useState(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +104,42 @@ export default function ContestDetail() {
       cancelled = true;
     };
   }, [id, enteredContestKey]);
+
+  useEffect(() => {
+    if (!contest?.is_registered || problems.length === 0) return undefined;
+
+    let cancelled = false;
+
+    async function loadSolvedProblems() {
+      const results = await Promise.all(
+        problems.map(async (problem) => {
+          try {
+            const data = await submissionService.getSubmissions({
+              problemId: problem.problem_id,
+              status: "accepted",
+              pageSize: 100,
+            });
+            const submissions = data.items || data.submissions || [];
+            return submissions.some((submission) => submission.status === "Accepted")
+              ? problem.problem_id
+              : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setSolvedProblemIds(new Set(results.filter(Boolean)));
+      }
+    }
+
+    loadSolvedProblems();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contest?.is_registered, problems]);
 
   const handleEnter = async () => {
     setMembershipAction("enter");
@@ -334,7 +372,11 @@ export default function ContestDetail() {
                     className="border-t border-slate-800 transition hover:bg-slate-900/60"
                   >
                     <td className="px-6 py-5">
-                      <Circle className="text-slate-500" size={18} />
+                      {solvedProblemIds.has(problem.problem_id) ? (
+                        <CheckCircle2 className="text-emerald-400" size={18} />
+                      ) : (
+                        <Circle className="text-slate-500" size={18} />
+                      )}
                     </td>
 
                     <td className="font-medium">{problem.title}</td>
@@ -352,6 +394,7 @@ export default function ContestDetail() {
                     <td>
                       <Link
                         to={`/problems/${problem.problem_id}`}
+                        state={{ contestId: contest.contest_id }}
                         className="flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400"
                       >
                         Solve

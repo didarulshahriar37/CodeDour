@@ -116,6 +116,8 @@ const difficultyColor = (difficulty) => {
 
 export default function ProblemDetail() {
   const { id: problemId } = useParams();
+  const location = useLocation();
+  const contestId = location.state?.contestId;
   const [problem, setProblem] = useState(null);
   const [sampleTestCases, setSampleTestCases] = useState([]);
   const [loadingProblem, setLoadingProblem] = useState(true);
@@ -216,7 +218,6 @@ export default function ProblemDetail() {
   };
 
   const { isAuthenticated, loading: authLoading, refreshProfile } = useAuth();
-  const location = useLocation();
 
   if (!authLoading && !isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -232,6 +233,7 @@ export default function ProblemDetail() {
         language: language.label,
         language_id: language.judge0Id,
         code,
+        contest_id: contestId,
       });
 
       const isAccepted = res.verdict === "Accepted";
