@@ -56,7 +56,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="flex w-full flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
-        {/* Sidebar */}
         <aside className="w-full lg:w-72 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/40 p-6 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-hidden">
           <div className="flex items-center gap-3 pb-6 border-b border-slate-800/80 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 font-bold text-white shadow-lg">
@@ -75,7 +74,6 @@ export default function AdminDashboard() {
           </div>
 
           <nav className="space-y-2">
-            {/* Users */}
             <button
               onClick={() => setActiveTab("users")}
               className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold whitespace-nowrap transition ${
@@ -88,7 +86,6 @@ export default function AdminDashboard() {
               User Management
             </button>
 
-            {/* Problems */}
             <button
               onClick={() => setActiveTab("problems")}
               className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold whitespace-nowrap transition ${
@@ -101,7 +98,6 @@ export default function AdminDashboard() {
               Problems Management
             </button>
 
-            {/* Contests */}
             <button
               onClick={() => setActiveTab("contests")}
               className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold whitespace-nowrap transition ${
@@ -116,7 +112,6 @@ export default function AdminDashboard() {
           </nav>
         </aside>
 
-        {/* Main */}
         <main className="flex-1 min-w-0 p-6 lg:p-8">
           {activeTab === "users" && <UserManagement />}
 
@@ -128,10 +123,6 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-/* =========================================================
-   USER MANAGEMENT
-========================================================= */
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -373,10 +364,6 @@ function UserManagement() {
     </div>
   );
 }
-
-/* =========================================================
-   PROBLEMS MANAGEMENT
-========================================================= */
 
 function ProblemsManagement() {
   const [problems, setProblems] = useState([]);
@@ -799,7 +786,6 @@ function ProblemsManagement() {
         </div>
       )}
 
-      {/* Problem Modal */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm overflow-y-auto"
@@ -1248,10 +1234,6 @@ function ProblemsManagement() {
   );
 }
 
-/* =========================================================
-   CONTEST MANAGEMENT
-========================================================= */
-
 function ContestManagement() {
   const [contests, setContests] = useState([]);
   const [contestsLoading, setContestsLoading] = useState(true);
@@ -1311,7 +1293,6 @@ function ContestManagement() {
 
   return (
     <div className="max-w-5xl">
-      {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20">
@@ -1333,7 +1314,6 @@ function ContestManagement() {
         </div>
       </div>
 
-      {/* Message */}
       {message && (
         <div
           className={`mb-5 rounded-xl border px-4 py-3 text-sm font-medium ${
@@ -1346,7 +1326,6 @@ function ContestManagement() {
         </div>
       )}
 
-      {/* Existing contests */}
       <section className="mb-6 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40">
         <div className="border-b border-slate-800 px-6 py-4">
           <h2 className="text-lg font-bold text-white">

@@ -53,6 +53,7 @@ function CollapsibleContestSection({
   expanded,
   onToggle,
   emptyText,
+  enteredContestIds,
 }) {
   return (
     <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
@@ -71,6 +72,11 @@ function CollapsibleContestSection({
               <p className="mt-1 text-sm capitalize text-slate-400">
                 Latest contest · {latestContest.status} · {latestContest.participant_count} participants
               </p>
+              {title === "Upcoming Contests" && enteredContestIds.has(latestContest.contest_id) && (
+                <span className="mt-2 inline-flex rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-300">
+                  Entered
+                </span>
+              )}
             </>
           ) : (
             <p className="mt-2 text-sm text-slate-500">{emptyText}</p>
@@ -88,6 +94,11 @@ function CollapsibleContestSection({
                   <h3 className="font-semibold">{contest.title}</h3>
                   <span className="rounded-full bg-indigo-500/15 px-2 py-1 text-xs font-semibold capitalize text-indigo-300">{contest.status}</span>
                 </div>
+                {title === "Upcoming Contests" && enteredContestIds.has(contest.contest_id) && (
+                  <span className="mt-2 inline-flex rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-300">
+                    Entered
+                  </span>
+                )}
                 <p className="mt-2 text-sm text-slate-400">{formatDate(contest.start_time)} · {contest.participant_count} participants</p>
                 <Link to={`/contests/${contest.contest_id}`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-300 hover:text-indigo-200">View Details <Play size={14} /></Link>
               </article>
@@ -161,13 +172,19 @@ export default function Contests() {
       contest.created_by_name === profile.display_name
   );
   const latestHostedContest = hostedContests[0];
+  const enteredContestIds = new Set(
+    contests
+      .filter(
+        (contest) =>
+          firebaseUser &&
+          window.localStorage.getItem(
+            `codedour-entered-contest:${firebaseUser.uid}:${contest.contest_id}`
+          ) === "true"
+      )
+      .map((contest) => contest.contest_id)
+  );
   const contestHistory = contests.filter(
-    (contest) =>
-      firebaseUser &&
-      contest.status === "ended" &&
-      window.localStorage.getItem(
-        `codedour-entered-contest:${firebaseUser.uid}:${contest.contest_id}`
-      ) === "true"
+    (contest) => contest.status === "ended" && enteredContestIds.has(contest.contest_id)
   );
   const latestHistoryContest = contestHistory[0];
 
@@ -207,7 +224,6 @@ export default function Contests() {
 
         {!loading && !error && (
           <>
-            {/* Running Contest */}
             {runningContest && (
               <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-r from-indigo-900/40 to-slate-900 p-8">
                 <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold">
@@ -255,7 +271,6 @@ export default function Contests() {
               </div>
             )}
 
-            {/* Upcoming Contests */}
             <div className="mt-14 mb-4">
               <Link
                 to="/contests/create"
@@ -274,6 +289,7 @@ export default function Contests() {
                 expanded={upcomingExpanded}
                 onToggle={() => setUpcomingExpanded((expanded) => !expanded)}
                 emptyText="No upcoming contests."
+                enteredContestIds={enteredContestIds}
               />
               <CollapsibleContestSection
                 title="My Hosted Contests"
@@ -282,6 +298,7 @@ export default function Contests() {
                 expanded={hostedExpanded}
                 onToggle={() => setHostedExpanded((expanded) => !expanded)}
                 emptyText="You have not hosted a contest yet."
+                enteredContestIds={enteredContestIds}
               />
               <CollapsibleContestSection
                 title="My Contest History"
@@ -290,10 +307,10 @@ export default function Contests() {
                 expanded={participatedExpanded}
                 onToggle={() => setParticipatedExpanded((expanded) => !expanded)}
                 emptyText="You have not completed a contest yet."
+                enteredContestIds={enteredContestIds}
               />
             </div>
 
-            {/* Past Contests */}
             <h2 className="mt-14 mb-6 text-2xl font-bold">
               Past Contests
             </h2>
