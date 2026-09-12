@@ -1415,19 +1415,27 @@ function ContestManagement() {
                           : "Not scheduled"}
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteContest(contest)}
-                          disabled={deletingContestId === contest.contest_id}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {deletingContestId === contest.contest_id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                          Delete
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            to={`/contests/${contest.contest_id}`}
+                            className="inline-flex items-center rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-300 transition hover:bg-indigo-500/20"
+                          >
+                            View Details
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteContest(contest)}
+                            disabled={deletingContestId === contest.contest_id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {deletingContestId === contest.contest_id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
