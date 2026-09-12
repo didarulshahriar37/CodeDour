@@ -57,7 +57,7 @@ export default function ContestDetail() {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [registering, setRegistering] = useState(false);
+  const [membershipAction, setMembershipAction] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,8 +91,8 @@ export default function ContestDetail() {
     };
   }, [id]);
 
-  const handleRegister = async () => {
-    setRegistering(true);
+  const handleEnter = async () => {
+    setMembershipAction("enter");
     setError(null);
 
     try {
@@ -100,12 +100,32 @@ export default function ContestDetail() {
 
       setContest((prev) => ({
         ...prev,
-        isRegistered: true,
+        is_registered: true,
+        participant_count: Number(prev.participant_count || 0) + 1,
       }));
     } catch (err) {
-      setError(err.message || "Couldn't register for this contest.");
+      setError(err.message || "Couldn't enter this contest.");
     } finally {
-      setRegistering(false);
+      setMembershipAction(null);
+    }
+  };
+
+  const handleExit = async () => {
+    setMembershipAction("exit");
+    setError(null);
+
+    try {
+      await contestService.leaveContest(id);
+
+      setContest((prev) => ({
+        ...prev,
+        is_registered: false,
+        participant_count: Math.max(0, Number(prev.participant_count || 0) - 1),
+      }));
+    } catch (err) {
+      setError(err.message || "Couldn't exit this contest.");
+    } finally {
+      setMembershipAction(null);
     }
   };
 
@@ -179,21 +199,30 @@ export default function ContestDetail() {
           </div>
 
           <div className="mt-8">
-            {contest.status === "upcoming" && !contest.isRegistered && (
+            {contest.status === "upcoming" && !contest.is_registered && (
               <button
-                onClick={handleRegister}
-                disabled={registering}
+                onClick={handleEnter}
+                disabled={membershipAction !== null}
                 className="rounded-lg bg-indigo-500 px-6 py-3 font-semibold transition hover:bg-indigo-400 disabled:opacity-50"
               >
-                {registering ? "Registering..." : "Register"}
+                {membershipAction === "enter" ? "Entering..." : "Enter Contest"}
               </button>
             )}
 
-            {contest.status === "upcoming" && contest.isRegistered && (
-              <span className="flex items-center gap-2 text-sm font-medium text-emerald-400">
-                <CheckCircle2 size={16} />
-                You're registered
-              </span>
+            {contest.status === "upcoming" && contest.is_registered && (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400">
+                  <CheckCircle2 size={16} />
+                  Entered
+                </span>
+                <button
+                  onClick={handleExit}
+                  disabled={membershipAction !== null}
+                  className="rounded-lg border border-red-500/40 px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                >
+                  {membershipAction === "exit" ? "Exiting..." : "Exit Contest"}
+                </button>
+              </div>
             )}
 
             {contest.status === "running" && (

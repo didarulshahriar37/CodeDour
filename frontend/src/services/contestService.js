@@ -17,6 +17,11 @@ async function registerForContest(id) {
   return data;
 }
 
+async function leaveContest(id) {
+  const { data } = await api.delete(`/contests/${id}/join`);
+  return data;
+}
+
 async function addProblemsToContest(id, problems) {
   const { data } = await api.post(`/contests/${id}/problems`, {
     problems,
@@ -35,6 +40,7 @@ const contestService = {
   getContests,
   getContestById,
   registerForContest,
+  leaveContest,
   addProblemsToContest,
   recalculateContestRatings,
 };
@@ -45,6 +51,7 @@ export {
   getContests,
   getContestById,
   registerForContest,
+  leaveContest,
   addProblemsToContest,
   recalculateContestRatings,
 };
