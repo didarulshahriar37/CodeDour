@@ -30,6 +30,11 @@ async function deleteProblem(problemId) {
   return data;
 }
 
+async function deleteContest(contestId) {
+  const { data } = await api.delete(`/admin/contests/${contestId}`);
+  return data;
+}
+
 const adminService = {
   getAllUsers,
   updateUserRole,
@@ -37,6 +42,7 @@ const adminService = {
   createProblem,
   updateProblem,
   deleteProblem,
+  deleteContest,
 };
 
 export default adminService;

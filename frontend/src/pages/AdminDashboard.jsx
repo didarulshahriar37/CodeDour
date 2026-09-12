@@ -14,8 +14,6 @@ import {
   Lock,
   ArrowLeft,
   Trophy,
-  Calendar,
-  Clock,
 } from "lucide-react";
 import adminService from "../services/adminService";
 import problemService from "../services/problemService";
@@ -1255,280 +1253,59 @@ function ProblemsManagement() {
 ========================================================= */
 
 function ContestManagement() {
-  const [problems, setProblems] = useState([]);
-  const [problemsLoading, setProblemsLoading] =
-    useState(true);
   const [contests, setContests] = useState([]);
-  const [contestsLoading, setContestsLoading] =
-    useState(true);
-
-  const [creating, setCreating] = useState(false);
-
+  const [contestsLoading, setContestsLoading] = useState(true);
+  const [deletingContestId, setDeletingContestId] = useState(null);
   const [message, setMessage] = useState(null);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    start_time: "",
-    end_time: "",
-    duration_minutes: 120,
-    is_published: true,
-  });
-
-  const [selectedProblems, setSelectedProblems] =
-    useState([]);
-
-  /* -----------------------------------------
-     Load available problems
-  ----------------------------------------- */
-
-  const fetchContests = async () => {
-    setContestsLoading(true);
-
-    try {
-      const data = await contestService.getContests();
-      setContests(data.contests || data || []);
-    } catch (err) {
-      console.error("Failed to fetch contests:", err);
-      setMessage({
-        type: "error",
-        text: "Failed to load contests.",
-      });
-    } finally {
-      setContestsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const fetchProblems = async () => {
-      setProblemsLoading(true);
+    let cancelled = false;
 
+    async function loadContests() {
       try {
-        const data = await problemService.getProblems({
-          limit: 100,
-        });
-
-        setProblems(data.problems || []);
+        const data = await contestService.getContests();
+        if (!cancelled) setContests(data.contests || []);
       } catch (err) {
-        console.error("Failed to fetch problems:", err);
-        setMessage({
-          type: "error",
-          text: "Failed to load problems.",
-        });
+        console.error("Failed to fetch contests:", err);
+        if (!cancelled) {
+          setMessage({ type: "error", text: "Failed to load contests." });
+        }
       } finally {
-        setProblemsLoading(false);
+        if (!cancelled) setContestsLoading(false);
       }
-    };
+    }
 
-    fetchProblems();
-    fetchContests();
+    loadContests();
+    return () => { cancelled = true; };
   }, []);
 
-  /* -----------------------------------------
-     Form input change
-  ----------------------------------------- */
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } =
-      e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : value,
-    }));
-  };
-
-  /* -----------------------------------------
-     Add problem
-  ----------------------------------------- */
-
-  const addProblem = () => {
-    setSelectedProblems((prev) => [
-      ...prev,
-      {
-        problem_id: "",
-        problem_order: String.fromCharCode(
-          65 + prev.length
-        ),
-        points: 100,
-      },
-    ]);
-  };
-
-  /* -----------------------------------------
-     Remove problem
-  ----------------------------------------- */
-
-  const removeProblem = (index) => {
-    setSelectedProblems((prev) =>
-      prev.filter((_, i) => i !== index)
+  const handleDeleteContest = async (contest) => {
+    const confirmed = window.confirm(
+      `Delete "${contest.title}"? This cannot be undone.`
     );
-  };
 
-  /* -----------------------------------------
-     Change selected problem
-  ----------------------------------------- */
+    if (!confirmed) return;
 
-  const updateSelectedProblem = (
-    index,
-    field,
-    value
-  ) => {
-    setSelectedProblems((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              [field]: value,
-            }
-          : item
-      )
-    );
-  };
-
-  /* -----------------------------------------
-     Create contest
-  ----------------------------------------- */
-
-  const handleCreateContest = async (e) => {
-    e.preventDefault();
-
-    setCreating(true);
+    setDeletingContestId(contest.contest_id);
     setMessage(null);
 
     try {
-      if (!formData.title.trim()) {
-        throw new Error(
-          "Contest title is required."
-        );
-      }
-
-      if (
-        !formData.start_time ||
-        !formData.end_time
-      ) {
-        throw new Error(
-          "Start time and end time are required."
-        );
-      }
-
-      if (!formData.duration_minutes) {
-        throw new Error(
-          "Duration is required."
-        );
-      }
-
-      const startDate = new Date(
-        formData.start_time
+      await adminService.deleteContest(contest.contest_id);
+      setContests((current) =>
+        current.filter(({ contest_id }) => contest_id !== contest.contest_id)
       );
-
-      const endDate = new Date(
-        formData.end_time
-      );
-
-      if (endDate <= startDate) {
-        throw new Error(
-          "End time must be after start time."
-        );
-      }
-
-      /* Make sure every selected problem is valid */
-      const invalidProblem =
-        selectedProblems.some(
-          (problem) =>
-            !problem.problem_id
-        );
-
-      if (invalidProblem) {
-        throw new Error(
-          "Please select a problem for every problem row."
-        );
-      }
-
-      /* Convert selected problems to backend format */
-      const contestProblems =
-        selectedProblems.map(
-          (problem, index) => ({
-            problem_id: Number(
-              problem.problem_id
-            ),
-            problem_order:
-              problem.problem_order ||
-              String.fromCharCode(
-                65 + index
-              ),
-            points:
-              Number(problem.points) || 100,
-          })
-        );
-
-      /* Exact payload expected by backend */
-      const payload = {
-        title: formData.title.trim(),
-        description:
-          formData.description.trim(),
-        start_time:
-          startDate.toISOString(),
-        end_time:
-          endDate.toISOString(),
-        duration_minutes: Number(
-          formData.duration_minutes
-        ),
-        is_published:
-          formData.is_published,
-        problems: contestProblems,
-      };
-
-      console.log(
-        "CREATE CONTEST PAYLOAD:",
-        payload
-      );
-
-      const response = await api.post(
-        "/contests",
-        payload
-      );
-
-      console.log(
-        "CREATE CONTEST RESPONSE:",
-        response.data
-      );
-
       setMessage({
         type: "success",
-        text: "Contest created successfully!",
+        text: `"${contest.title}" was deleted.`,
       });
-
-      /* Reset form */
-      setFormData({
-        title: "",
-        description: "",
-        start_time: "",
-        end_time: "",
-        duration_minutes: 120,
-        is_published: true,
-      });
-
-      setSelectedProblems([]);
-      fetchContests();
     } catch (err) {
-      console.error(
-        "CREATE CONTEST ERROR:",
-        err
-      );
-
+      console.error("Failed to delete contest:", err);
       setMessage({
         type: "error",
-        text:
-          err?.message ||
-          err?.details?.error ||
-          "Failed to create contest.",
+        text: err?.message || "Failed to delete contest.",
       });
     } finally {
-      setCreating(false);
+      setDeletingContestId(null);
     }
   };
 
@@ -1550,7 +1327,7 @@ function ContestManagement() {
             </h1>
 
             <p className="text-sm text-slate-400">
-              Review contests and create a new programming contest.
+              Review contest status, availability, and participants.
             </p>
           </div>
         </div>
@@ -1599,6 +1376,7 @@ function ContestManagement() {
                   <th className="px-6 py-3 font-semibold">Availability</th>
                   <th className="px-6 py-3 font-semibold">Participants</th>
                   <th className="px-6 py-3 font-semibold">Starts</th>
+                  <th className="px-6 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -1636,6 +1414,21 @@ function ContestManagement() {
                           ? new Date(contest.start_time).toLocaleString()
                           : "Not scheduled"}
                       </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContest(contest)}
+                          disabled={deletingContestId === contest.contest_id}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingContestId === contest.contest_id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1645,347 +1438,7 @@ function ContestManagement() {
         )}
       </section>
 
-      {/* Contest Form */}
-      <form
-        onSubmit={handleCreateContest}
-        className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6"
-      >
-        <div className="space-y-6">
-          {/* Title */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Contest Title
-            </label>
 
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              placeholder="e.g. Weekly Contest #1"
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-indigo-500"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Description
-            </label>
-
-            <textarea
-              name="description"
-              value={
-                formData.description
-              }
-              onChange={handleChange}
-              rows={4}
-              placeholder="Describe the contest..."
-              className="w-full resize-none rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-indigo-500"
-            />
-          </div>
-
-          {/* Date / Time */}
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Calendar size={14} />
-                Start Time
-              </label>
-
-              <input
-                type="datetime-local"
-                name="start_time"
-                value={
-                  formData.start_time
-                }
-                onChange={handleChange}
-                required
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Calendar size={14} />
-                End Time
-              </label>
-
-              <input
-                type="datetime-local"
-                name="end_time"
-                value={formData.end_time}
-                onChange={handleChange}
-                required
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-indigo-500"
-              />
-            </div>
-          </div>
-
-          {/* Duration */}
-          <div className="max-w-sm">
-            <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              <Clock size={14} />
-              Duration (minutes)
-            </label>
-
-            <input
-              type="number"
-              name="duration_minutes"
-              value={
-                formData.duration_minutes
-              }
-              onChange={handleChange}
-              min="1"
-              required
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-indigo-500"
-            />
-
-            <p className="mt-1.5 text-xs text-slate-500">
-              Example: 120 = 2 hours
-            </p>
-          </div>
-
-          {/* Publish */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                name="is_published"
-                checked={
-                  formData.is_published
-                }
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
-              />
-
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  Publish contest immediately
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Published contests will appear on
-                  the public Contests page.
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* Problems */}
-          <div className="border-t border-slate-800 pt-6">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white">
-                  Contest Problems
-                </h2>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  Select existing problems and assign
-                  their order and points.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={addProblem}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-400 transition hover:bg-indigo-500/20"
-              >
-                <Plus size={16} />
-                Add Problem
-              </button>
-            </div>
-
-            {problemsLoading ? (
-              <div className="flex items-center justify-center rounded-xl border border-slate-800 bg-slate-950 py-10 text-sm text-slate-500">
-                <Loader2
-                  size={20}
-                  className="mr-2 animate-spin text-indigo-400"
-                />
-                Loading problems...
-              </div>
-            ) : problems.length === 0 ? (
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-6 text-center">
-                <p className="text-sm font-medium text-amber-400">
-                  No problems available.
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  Create at least one problem before
-                  creating a contest.
-                </p>
-              </div>
-            ) : selectedProblems.length ===
-              0 ? (
-              <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 px-4 py-8 text-center">
-                <Code2
-                  size={28}
-                  className="mx-auto mb-2 text-slate-600"
-                />
-
-                <p className="text-sm text-slate-400">
-                  No problems added yet.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={addProblem}
-                  className="mt-3 text-sm font-semibold text-indigo-400 hover:text-indigo-300"
-                >
-                  + Add the first problem
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {selectedProblems.map(
-                  (problem, index) => (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-slate-800 bg-slate-950 p-4"
-                    >
-                      <div className="grid gap-4 md:grid-cols-12">
-                        {/* Problem */}
-                        <div className="md:col-span-6">
-                          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Problem
-                          </label>
-
-                          <select
-                            value={
-                              problem.problem_id
-                            }
-                            onChange={(e) =>
-                              updateSelectedProblem(
-                                index,
-                                "problem_id",
-                                e.target.value
-                              )
-                            }
-                            required
-                            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-500"
-                          >
-                            <option value="">
-                              Select a problem
-                            </option>
-
-                            {problems.map(
-                              (p) => (
-                                <option
-                                  key={
-                                    p.problem_id
-                                  }
-                                  value={
-                                    p.problem_id
-                                  }
-                                >
-                                  #{p.problem_id} —{" "}
-                                  {p.title} (
-                                  {p.difficulty})
-                                </option>
-                              )
-                            )}
-                          </select>
-                        </div>
-
-                        {/* Order */}
-                        <div className="md:col-span-2">
-                          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Order
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              problem.problem_order
-                            }
-                            onChange={(e) =>
-                              updateSelectedProblem(
-                                index,
-                                "problem_order",
-                                e.target.value
-                              )
-                            }
-                            maxLength={3}
-                            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-500"
-                          />
-                        </div>
-
-                        {/* Points */}
-                        <div className="md:col-span-2">
-                          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Points
-                          </label>
-
-                          <input
-                            type="number"
-                            min="1"
-                            value={
-                              problem.points
-                            }
-                            onChange={(e) =>
-                              updateSelectedProblem(
-                                index,
-                                "points",
-                                e.target.value
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-500"
-                          />
-                        </div>
-
-                        {/* Remove */}
-                        <div className="flex items-end md:col-span-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeProblem(
-                                index
-                              )
-                            }
-                            className="w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
-                          >
-                            <span className="flex items-center justify-center gap-2">
-                              <Trash2
-                                size={15}
-                              />
-                              Remove
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end border-t border-slate-800 pt-6">
-            <button
-              type="submit"
-              disabled={creating}
-              className="inline-flex min-w-48 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {creating ? (
-                <>
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
-                  Creating Contest...
-                </>
-              ) : (
-                <>
-                  <Trophy size={17} />
-                  Create Contest
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </form>
     </div>
   );
 }
