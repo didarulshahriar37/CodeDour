@@ -7,6 +7,8 @@ import {
   Users,
   Play,
   Plus,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -44,11 +46,67 @@ const formatTime = (date) => {
   });
 };
 
+function CollapsibleContestSection({
+  title,
+  latestContest,
+  contests,
+  expanded,
+  onToggle,
+  emptyText,
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={!latestContest}
+        aria-expanded={latestContest ? expanded : undefined}
+        className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-800/60 disabled:cursor-default disabled:hover:bg-transparent"
+      >
+        <div>
+          <p className="text-sm font-semibold text-indigo-300">{title}</p>
+          {latestContest ? (
+            <>
+              <h2 className="mt-1 text-lg font-bold">{latestContest.title}</h2>
+              <p className="mt-1 text-sm capitalize text-slate-400">
+                Latest contest · {latestContest.status} · {latestContest.participant_count} participants
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">{emptyText}</p>
+          )}
+        </div>
+        {latestContest && (expanded ? <ChevronUp className="shrink-0 text-indigo-300" /> : <ChevronDown className="shrink-0 text-indigo-300" />)}
+      </button>
+
+      {expanded && latestContest && (
+        <div className="border-t border-slate-800 p-4">
+          <div className="space-y-3">
+            {contests.map((contest) => (
+              <article key={contest.contest_id} className="rounded-lg border border-slate-800 bg-slate-950 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-semibold">{contest.title}</h3>
+                  <span className="rounded-full bg-indigo-500/15 px-2 py-1 text-xs font-semibold capitalize text-indigo-300">{contest.status}</span>
+                </div>
+                <p className="mt-2 text-sm text-slate-400">{formatDate(contest.start_time)} · {contest.participant_count} participants</p>
+                <Link to={`/contests/${contest.contest_id}`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-300 hover:text-indigo-200">View Details <Play size={14} /></Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Contests() {
-  const { profile } = useAuth();
+  const { profile, firebaseUser } = useAuth();
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hostedExpanded, setHostedExpanded] = useState(false);
+  const [upcomingExpanded, setUpcomingExpanded] = useState(false);
+  const [participatedExpanded, setParticipatedExpanded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +154,21 @@ export default function Contests() {
   const pastContests = contests.filter(
     (contest) => contest.status === "ended"
   );
+
+  const hostedContests = contests.filter(
+    (contest) =>
+      profile?.display_name &&
+      contest.created_by_name === profile.display_name
+  );
+  const latestHostedContest = hostedContests[0];
+  const participatedContests = contests.filter(
+    (contest) =>
+      firebaseUser &&
+      window.localStorage.getItem(
+        `codedour-entered-contest:${firebaseUser.uid}:${contest.contest_id}`
+      ) === "true"
+  );
+  const latestParticipatedContest = participatedContests[0];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -184,13 +257,6 @@ export default function Contests() {
             {/* Upcoming Contests */}
             <div className="mt-14 mb-4">
               <Link
-                to="/contests/hosted"
-                className="mr-3 inline-flex items-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-300 transition hover:bg-indigo-500/20"
-              >
-                <Trophy size={16} />
-                My Hosted Contests
-              </Link>
-              <Link
                 to="/contests/create"
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold transition hover:bg-indigo-400"
               >
@@ -199,63 +265,32 @@ export default function Contests() {
               </Link>
             </div>
 
-            <h2 className="mb-6 text-2xl font-bold">Upcoming Contests</h2>
-
-            {upcomingContests.length === 0 ? (
-              <p className="text-slate-500">
-                No upcoming contests.
-              </p>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {upcomingContests.map((contest) => (
-                  <div
-                    key={contest.contest_id}
-                    className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:border-indigo-500"
-                  >
-                    <h3 className="text-xl font-semibold">
-                      {contest.title}
-                    </h3>
-
-                    {profile?.display_name === contest.created_by_name && (
-                      <span className="mt-2 inline-flex rounded-full bg-indigo-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-300">
-                        Hosted by you
-                      </span>
-                    )}
-
-                    {contest.description && (
-                      <p className="mt-2 text-sm text-slate-500">
-                        {contest.description}
-                      </p>
-                    )}
-
-                    <div className="mt-5 space-y-3 text-slate-400">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays size={18} />
-                        {formatDate(contest.start_time)}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Clock3 size={18} />
-                        {formatDuration(contest.duration_minutes)}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Users size={18} />
-                        {contest.participant_count} Registered
-                      </div>
-                    </div>
-
-                    <Link
-                      to={`/contests/${contest.contest_id}`}
-                      className="mt-6 flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2 font-medium transition hover:bg-indigo-400"
-                    >
-                      View Details
-                      <Play size={16} />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="mb-14 grid gap-5 lg:grid-cols-3">
+              <CollapsibleContestSection
+                title="Upcoming Contests"
+                latestContest={upcomingContests[0]}
+                contests={upcomingContests}
+                expanded={upcomingExpanded}
+                onToggle={() => setUpcomingExpanded((expanded) => !expanded)}
+                emptyText="No upcoming contests."
+              />
+              <CollapsibleContestSection
+                title="My Hosted Contests"
+                latestContest={latestHostedContest}
+                contests={hostedContests}
+                expanded={hostedExpanded}
+                onToggle={() => setHostedExpanded((expanded) => !expanded)}
+                emptyText="You have not hosted a contest yet."
+              />
+              <CollapsibleContestSection
+                title="Participating Contests"
+                latestContest={latestParticipatedContest}
+                contests={participatedContests}
+                expanded={participatedExpanded}
+                onToggle={() => setParticipatedExpanded((expanded) => !expanded)}
+                emptyText="You have not entered a contest yet."
+              />
+            </div>
 
             {/* Past Contests */}
             <h2 className="mt-14 mb-6 text-2xl font-bold">
