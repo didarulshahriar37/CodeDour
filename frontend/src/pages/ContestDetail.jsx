@@ -10,8 +10,10 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
+  Lock,
 } from "lucide-react";
 import contestService from "../services/contestService";
+import { useAuth } from "../context/AuthContext";
 
 const difficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -51,6 +53,10 @@ const formatDuration = (minutes) => {
 
 export default function ContestDetail() {
   const { id } = useParams();
+  const { firebaseUser } = useAuth();
+  const enteredContestKey = firebaseUser
+    ? `codedour-entered-contest:${firebaseUser.uid}:${id}`
+    : null;
 
   const [activeTab, setActiveTab] = useState("problems");
   const [contest, setContest] = useState(null);
@@ -71,7 +77,13 @@ export default function ContestDetail() {
 
         if (cancelled) return;
 
-        setContest(data.contest);
+        const enteredInBrowser =
+          enteredContestKey &&
+          window.localStorage.getItem(enteredContestKey) === "true";
+        setContest({
+          ...data.contest,
+          is_registered: data.contest.is_registered || enteredInBrowser,
+        });
         setProblems(data.problems || []);
       } catch (err) {
         if (!cancelled) {
@@ -89,7 +101,7 @@ export default function ContestDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, enteredContestKey]);
 
   const handleEnter = async () => {
     setMembershipAction("enter");
@@ -97,6 +109,10 @@ export default function ContestDetail() {
 
     try {
       await contestService.registerForContest(id);
+
+      if (enteredContestKey) {
+        window.localStorage.setItem(enteredContestKey, "true");
+      }
 
       setContest((prev) => ({
         ...prev,
@@ -116,6 +132,10 @@ export default function ContestDetail() {
 
     try {
       await contestService.leaveContest(id);
+
+      if (enteredContestKey) {
+        window.localStorage.removeItem(enteredContestKey);
+      }
 
       setContest((prev) => ({
         ...prev,
@@ -273,7 +293,17 @@ export default function ContestDetail() {
           ))}
         </div>
 
-        {activeTab === "problems" && (
+        {activeTab === "problems" && !contest.is_registered && (
+          <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 px-6 py-12 text-center">
+            <Lock size={28} className="mx-auto mb-3 text-indigo-400" />
+            <h2 className="text-lg font-semibold">Enter the contest to unlock problems</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              You need to enter this contest before you can view or solve its problems.
+            </p>
+          </div>
+        )}
+
+        {activeTab === "problems" && contest.is_registered && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full">
               <thead className="bg-slate-900 text-left text-slate-400">
