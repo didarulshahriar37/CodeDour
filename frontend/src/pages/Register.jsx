@@ -44,12 +44,7 @@ export default function Register() {
     setSubmitting(true);
 
     try {
-      const username = email.split("@")[0];
-
-      await register(email, password, {
-        fullName,
-        username,
-      });
+      await register(email, password, fullName);
 
       navigate("/", { replace: true });
     } catch (err) {

@@ -14,7 +14,7 @@ import api from "./api";
  
 const googleProvider = new GoogleAuthProvider();
  
-async function register({ email, password, username, fullName }) {
+async function register({ email, password, fullName }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   
   if (fullName && credential.user) {
@@ -25,7 +25,7 @@ async function register({ email, password, username, fullName }) {
   }
 
   try {
-    const { data } = await api.post("/auth/sync");
+    const { data } = await api.post("/auth/sync", { fullName });
     return { firebaseUser: credential.user, profile: data.user };
   } catch (error) {
     console.error("Failed to sync user to backend:", error);
@@ -48,8 +48,9 @@ async function loginWithGoogle() {
       username: credential.user.displayName,
       provider: "google",
     });
-  } catch {
-    
+  } catch (error) {
+    await firebaseSignOut(auth);
+    throw error;
   }
  
   return credential.user;

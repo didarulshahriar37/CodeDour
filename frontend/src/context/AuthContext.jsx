@@ -51,13 +51,12 @@ export function AuthProvider({ children }) {
     }
   }
  
-  async function register(email, password, username, fullName) {
+  async function register(email, password, fullName) {
     setError(null);
     try {
       const { profile: newProfile } = await authService.register({
         email,
         password,
-        username,
         fullName,
       });
       setProfile(newProfile);
