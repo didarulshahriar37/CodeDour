@@ -12,7 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import contestService from "../services/contestService";
- 
+
 const difficultyColor = (difficulty) => {
   switch (difficulty) {
     case "Easy":
@@ -25,79 +25,90 @@ const difficultyColor = (difficulty) => {
       return "text-slate-400";
   }
 };
- 
+
 const statusBadge = {
   running: { label: "LIVE NOW", className: "bg-red-500 text-white" },
   upcoming: { label: "UPCOMING", className: "bg-indigo-500 text-white" },
-  past: { label: "ENDED", className: "bg-slate-700 text-slate-300" },
+  ended: { label: "ENDED", className: "bg-slate-700 text-slate-300" },
 };
- 
+
+const formatDuration = (minutes) => {
+  if (!minutes) return "N/A";
+
+  if (minutes < 60) {
+    return `${minutes} Minutes`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (remainingMinutes === 0) {
+    return `${hours} Hour${hours > 1 ? "s" : ""}`;
+  }
+
+  return `${hours}h ${remainingMinutes}m`;
+};
+
 export default function ContestDetail() {
   const { id } = useParams();
- 
+
   const [activeTab, setActiveTab] = useState("problems");
   const [contest, setContest] = useState(null);
   const [problems, setProblems] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [registering, setRegistering] = useState(false);
- 
+
   useEffect(() => {
     let cancelled = false;
- 
+
     async function load() {
       setLoading(true);
       setError(null);
+
       try {
-        const [contestData, problemsData] = await Promise.all([
-          contestService.getContestById(id),
-          contestService.getContestProblems(id),
-        ]);
+        const data = await contestService.getContestById(id);
+
         if (cancelled) return;
-        setContest(contestData);
-        setProblems(problemsData);
+
+        setContest(data.contest);
+        setProblems(data.problems || []);
       } catch (err) {
-        if (!cancelled) setError(err.message || "Couldn't load this contest.");
+        if (!cancelled) {
+          setError(err.message || "Couldn't load this contest.");
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
- 
+
     load();
+
     return () => {
       cancelled = true;
     };
   }, [id]);
- 
-  useEffect(() => {
-    if (activeTab !== "leaderboard" || leaderboard.length) return;
- 
-    let cancelled = false;
-    contestService
-      .getContestLeaderboard(id)
-      .then((data) => {
-        if (!cancelled) setLeaderboard(data);
-      })
-      .catch(() => {});
- 
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, id, leaderboard.length]);
- 
+
   const handleRegister = async () => {
     setRegistering(true);
+    setError(null);
+
     try {
       await contestService.registerForContest(id);
-      setContest((prev) => ({ ...prev, isRegistered: true }));
+
+      setContest((prev) => ({
+        ...prev,
+        isRegistered: true,
+      }));
     } catch (err) {
       setError(err.message || "Couldn't register for this contest.");
     } finally {
       setRegistering(false);
     }
   };
- 
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-500">
@@ -106,21 +117,25 @@ export default function ContestDetail() {
       </div>
     );
   }
- 
+
   if (error || !contest) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-950 text-slate-400">
         <AlertCircle size={28} className="text-red-400" />
         <p>{error || "Contest not found."}</p>
-        <Link to="/contests" className="text-sm text-indigo-400 hover:text-indigo-300">
+
+        <Link
+          to="/contests"
+          className="text-sm text-indigo-400 hover:text-indigo-300"
+        >
           Back to Contests
         </Link>
       </div>
     );
   }
- 
-  const badge = statusBadge[contest.status] || statusBadge.past;
- 
+
+  const badge = statusBadge[contest.status] || statusBadge.ended;
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-slate-800">
@@ -134,66 +149,85 @@ export default function ContestDetail() {
           </Link>
         </div>
       </div>
- 
+
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-r from-indigo-900/40 to-slate-900 p-8">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
+          >
             {badge.label}
           </span>
- 
+
           <h1 className="mt-4 text-3xl font-bold">{contest.title}</h1>
- 
+
           {contest.description && (
-            <p className="mt-3 max-w-2xl text-slate-400">{contest.description}</p>
+            <p className="mt-3 max-w-2xl text-slate-400">
+              {contest.description}
+            </p>
           )}
- 
+
           <div className="mt-6 flex flex-wrap gap-8 text-slate-300">
             <div className="flex items-center gap-2">
               <Clock3 size={18} className="text-indigo-400" />
-              {contest.duration}
+              {formatDuration(contest.duration_minutes)}
             </div>
+
             <div className="flex items-center gap-2">
               <Users size={18} className="text-indigo-400" />
-              {contest.participants} Participants
+              {contest.participant_count || 0} Participants
             </div>
           </div>
- 
+
           <div className="mt-8">
             {contest.status === "upcoming" && !contest.isRegistered && (
               <button
                 onClick={handleRegister}
                 disabled={registering}
-                className="rounded-lg bg-indigo-500 px-6 py-3 font-semibold hover:bg-indigo-400 transition disabled:opacity-50"
+                className="rounded-lg bg-indigo-500 px-6 py-3 font-semibold transition hover:bg-indigo-400 disabled:opacity-50"
               >
                 {registering ? "Registering..." : "Register"}
               </button>
             )}
+
             {contest.status === "upcoming" && contest.isRegistered && (
               <span className="flex items-center gap-2 text-sm font-medium text-emerald-400">
                 <CheckCircle2 size={16} />
                 You're registered
               </span>
             )}
+
             {contest.status === "running" && (
-              <button className="rounded-lg bg-indigo-500 px-6 py-3 font-semibold hover:bg-indigo-400 transition">
+              <button
+                onClick={() => setActiveTab("problems")}
+                className="rounded-lg bg-indigo-500 px-6 py-3 font-semibold transition hover:bg-indigo-400"
+              >
                 Enter Contest
               </button>
             )}
-            {contest.status === "past" && (
+
+            {contest.status === "ended" && (
               <button
                 onClick={() => setActiveTab("leaderboard")}
-                className="rounded-lg border border-slate-700 px-6 py-3 font-semibold hover:border-slate-500 hover:bg-slate-800/50 transition"
+                className="rounded-lg border border-slate-700 px-6 py-3 font-semibold transition hover:border-slate-500 hover:bg-slate-800/50"
               >
                 View Results
               </button>
             )}
           </div>
         </div>
- 
+
         <div className="mt-10 flex gap-6 border-b border-slate-800">
           {[
-            { id: "problems", label: "Problems", icon: CheckCircle2 },
-            { id: "leaderboard", label: "Leaderboard", icon: Trophy },
+            {
+              id: "problems",
+              label: "Problems",
+              icon: CheckCircle2,
+            },
+            {
+              id: "leaderboard",
+              label: "Leaderboard",
+              icon: Trophy,
+            },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -209,7 +243,7 @@ export default function ContestDetail() {
             </button>
           ))}
         </div>
- 
+
         {activeTab === "problems" && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full">
@@ -222,34 +256,43 @@ export default function ContestDetail() {
                   <th></th>
                 </tr>
               </thead>
+
               <tbody>
                 {problems.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
-                      Problems will be visible once the contest starts.
+                    <td
+                      colSpan={5}
+                      className="px-6 py-10 text-center text-slate-500"
+                    >
+                      No problems have been added to this contest yet.
                     </td>
                   </tr>
                 )}
+
                 {problems.map((problem) => (
                   <tr
-                    key={problem.id}
-                    className="border-t border-slate-800 hover:bg-slate-900/60 transition"
+                    key={problem.problem_id}
+                    className="border-t border-slate-800 transition hover:bg-slate-900/60"
                   >
                     <td className="px-6 py-5">
-                      {problem.solved ? (
-                        <CheckCircle2 className="text-green-400" size={18} />
-                      ) : (
-                        <Circle className="text-slate-500" size={18} />
-                      )}
+                      <Circle className="text-slate-500" size={18} />
                     </td>
+
                     <td className="font-medium">{problem.title}</td>
-                    <td className={`font-semibold ${difficultyColor(problem.difficulty)}`}>
+
+                    <td
+                      className={`font-semibold ${difficultyColor(
+                        problem.difficulty
+                      )}`}
+                    >
                       {problem.difficulty}
                     </td>
+
                     <td className="text-slate-400">{problem.points}</td>
+
                     <td>
                       <Link
-                        to={`/problems/${problem.id}`}
+                        to={`/problems/${problem.problem_id}`}
                         className="flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400"
                       >
                         Solve
@@ -262,48 +305,20 @@ export default function ContestDetail() {
             </table>
           </div>
         )}
- 
+
         {activeTab === "leaderboard" && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
-            <table className="w-full">
-              <thead className="bg-slate-900 text-left text-slate-400">
-                <tr>
-                  <th className="px-6 py-4">Rank</th>
-                  <th>Participant</th>
-                  <th>Solved</th>
-                  <th>Penalty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-slate-500">
-                      No standings yet.
-                    </td>
-                  </tr>
-                )}
-                {leaderboard.map((entry) => (
-                  <tr
-                    key={entry.rank}
-                    className="border-t border-slate-800 hover:bg-slate-900/60 transition"
-                  >
-                    <td className="px-6 py-4 font-semibold">
-                      {entry.rank <= 3 ? (
-                        <span className="flex items-center gap-1.5 text-yellow-400">
-                          <Trophy size={15} />
-                          {entry.rank}
-                        </span>
-                      ) : (
-                        entry.rank
-                      )}
-                    </td>
-                    <td className="font-medium">{entry.username}</td>
-                    <td className="text-slate-400">{entry.solvedCount}</td>
-                    <td className="text-slate-400">{entry.penalty}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="px-6 py-10 text-center">
+              <Trophy
+                size={32}
+                className="mx-auto mb-3 text-yellow-400"
+              />
+
+              <p className="text-slate-400">
+                Contest standings are not available from the current contest
+                API.
+              </p>
+            </div>
           </div>
         )}
       </div>
