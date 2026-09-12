@@ -182,8 +182,7 @@ export default function Contests() {
             {/* Upcoming Contests */}
             <div className="mt-14 mb-4">
               <Link
-                to="/admin"
-                state={{ activeTab: "contests" }}
+                to="/contests/create"
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold transition hover:bg-indigo-400"
               >
                 <Plus size={16} />

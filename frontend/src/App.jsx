@@ -10,6 +10,7 @@ import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
+import CreateContest from "./pages/CreateContest";
 import Submissions from "./pages/Submissions";
 import Leaderboard from "./pages/Leaderboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -30,6 +31,7 @@ function App() {
             <Route path="/problems/:id" element={<ProblemDetail />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/contests" element={<Contests />} />
+              <Route path="/contests/create" element={<CreateContest />} />
               <Route path="/contests/:id" element={<ContestDetail />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
             </Route>
