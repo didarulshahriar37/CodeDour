@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import adminService from "../services/adminService";
 import problemService from "../services/problemService";
+import contestService from "../services/contestService";
 import api from "../services/api";
 
 export default function AdminDashboard() {
@@ -1257,6 +1258,9 @@ function ContestManagement() {
   const [problems, setProblems] = useState([]);
   const [problemsLoading, setProblemsLoading] =
     useState(true);
+  const [contests, setContests] = useState([]);
+  const [contestsLoading, setContestsLoading] =
+    useState(true);
 
   const [creating, setCreating] = useState(false);
 
@@ -1278,23 +1282,35 @@ function ContestManagement() {
      Load available problems
   ----------------------------------------- */
 
+  const fetchContests = async () => {
+    setContestsLoading(true);
+
+    try {
+      const data = await contestService.getContests();
+      setContests(data.contests || data || []);
+    } catch (err) {
+      console.error("Failed to fetch contests:", err);
+      setMessage({
+        type: "error",
+        text: "Failed to load contests.",
+      });
+    } finally {
+      setContestsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchProblems = async () => {
       setProblemsLoading(true);
 
       try {
-        const data =
-          await problemService.getProblems({
-            limit: 100,
-          });
+        const data = await problemService.getProblems({
+          limit: 100,
+        });
 
         setProblems(data.problems || []);
       } catch (err) {
-        console.error(
-          "Failed to fetch problems:",
-          err
-        );
-
+        console.error("Failed to fetch problems:", err);
         setMessage({
           type: "error",
           text: "Failed to load problems.",
@@ -1305,6 +1321,7 @@ function ContestManagement() {
     };
 
     fetchProblems();
+    fetchContests();
   }, []);
 
   /* -----------------------------------------
@@ -1496,6 +1513,7 @@ function ContestManagement() {
       });
 
       setSelectedProblems([]);
+      fetchContests();
     } catch (err) {
       console.error(
         "CREATE CONTEST ERROR:",
@@ -1532,7 +1550,7 @@ function ContestManagement() {
             </h1>
 
             <p className="text-sm text-slate-400">
-              Create a new programming contest.
+              Review contests and create a new programming contest.
             </p>
           </div>
         </div>
@@ -1550,6 +1568,82 @@ function ContestManagement() {
           {message.text}
         </div>
       )}
+
+      {/* Existing contests */}
+      <section className="mb-6 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40">
+        <div className="border-b border-slate-800 px-6 py-4">
+          <h2 className="text-lg font-bold text-white">
+            Contests
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            See each contest's schedule status and availability.
+          </p>
+        </div>
+
+        {contestsLoading ? (
+          <div className="flex items-center justify-center py-12 text-sm text-slate-400">
+            <Loader2 size={18} className="mr-2 animate-spin text-indigo-400" />
+            Loading contests...
+          </div>
+        ) : contests.length === 0 ? (
+          <div className="px-6 py-10 text-center text-sm text-slate-400">
+            No contests are available yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-6 py-3 font-semibold">Contest</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 font-semibold">Availability</th>
+                  <th className="px-6 py-3 font-semibold">Participants</th>
+                  <th className="px-6 py-3 font-semibold">Starts</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {contests.map((contest) => {
+                  const status = contest.status || "upcoming";
+                  const statusClasses = {
+                    upcoming: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
+                    running: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+                    ended: "bg-slate-700/40 text-slate-300 border-slate-600",
+                  };
+
+                  return (
+                    <tr key={contest.contest_id} className="text-slate-300">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-white">{contest.title}</p>
+                        {contest.description && (
+                          <p className="mt-1 max-w-sm truncate text-xs text-slate-500">
+                            {contest.description}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${statusClasses[status] || statusClasses.upcoming}`}>
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${contest.is_published ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-slate-600 bg-slate-700/40 text-slate-300"}`}>
+                          {contest.is_published ? "Available" : "Unavailable"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">{contest.participant_count ?? 0}</td>
+                      <td className="px-6 py-4 text-slate-400">
+                        {contest.start_time
+                          ? new Date(contest.start_time).toLocaleString()
+                          : "Not scheduled"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Contest Form */}
       <form
