@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import contestService from "../services/contestService";
+import { useAuth } from "../context/AuthContext";
 
 const formatDuration = (minutes) => {
   if (!minutes) return "N/A";
@@ -44,6 +45,7 @@ const formatTime = (date) => {
 };
 
 export default function Contests() {
+  const { profile } = useAuth();
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -182,6 +184,13 @@ export default function Contests() {
             {/* Upcoming Contests */}
             <div className="mt-14 mb-4">
               <Link
+                to="/contests/hosted"
+                className="mr-3 inline-flex items-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-300 transition hover:bg-indigo-500/20"
+              >
+                <Trophy size={16} />
+                My Hosted Contests
+              </Link>
+              <Link
                 to="/contests/create"
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold transition hover:bg-indigo-400"
               >
@@ -206,6 +215,12 @@ export default function Contests() {
                     <h3 className="text-xl font-semibold">
                       {contest.title}
                     </h3>
+
+                    {profile?.display_name === contest.created_by_name && (
+                      <span className="mt-2 inline-flex rounded-full bg-indigo-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-300">
+                        Hosted by you
+                      </span>
+                    )}
 
                     {contest.description && (
                       <p className="mt-2 text-sm text-slate-500">
