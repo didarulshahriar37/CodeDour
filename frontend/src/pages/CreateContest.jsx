@@ -58,6 +58,16 @@ export default function CreateContest() {
     ));
   };
 
+  const startTime = new Date(form.startTime);
+  const endTime = new Date(form.endTime);
+  const canCreateContest =
+    form.title.trim().length > 0 &&
+    !Number.isNaN(startTime.getTime()) &&
+    !Number.isNaN(endTime.getTime()) &&
+    endTime > startTime &&
+    selectedProblems.length > 0 &&
+    selectedProblems.every((problem) => problem.problem_id);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
@@ -240,7 +250,7 @@ export default function CreateContest() {
               </Link>
               <button
                 type="submit"
-                disabled={submitting || selectedProblems.length === 0}
+                disabled={submitting || !canCreateContest}
                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-semibold transition hover:bg-indigo-400 disabled:opacity-50"
               >
                 {submitting && <Loader2 size={16} className="animate-spin" />}
