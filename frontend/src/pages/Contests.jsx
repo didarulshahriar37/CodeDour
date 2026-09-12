@@ -161,14 +161,15 @@ export default function Contests() {
       contest.created_by_name === profile.display_name
   );
   const latestHostedContest = hostedContests[0];
-  const participatedContests = contests.filter(
+  const contestHistory = contests.filter(
     (contest) =>
       firebaseUser &&
+      contest.status === "ended" &&
       window.localStorage.getItem(
         `codedour-entered-contest:${firebaseUser.uid}:${contest.contest_id}`
       ) === "true"
   );
-  const latestParticipatedContest = participatedContests[0];
+  const latestHistoryContest = contestHistory[0];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -283,12 +284,12 @@ export default function Contests() {
                 emptyText="You have not hosted a contest yet."
               />
               <CollapsibleContestSection
-                title="Participating Contests"
-                latestContest={latestParticipatedContest}
-                contests={participatedContests}
+                title="My Contest History"
+                latestContest={latestHistoryContest}
+                contests={contestHistory}
                 expanded={participatedExpanded}
                 onToggle={() => setParticipatedExpanded((expanded) => !expanded)}
-                emptyText="You have not entered a contest yet."
+                emptyText="You have not completed a contest yet."
               />
             </div>
 
