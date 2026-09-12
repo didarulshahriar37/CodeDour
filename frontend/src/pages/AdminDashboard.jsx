@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Navigate, Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Users,
   Code2,
@@ -23,7 +23,10 @@ import api from "../services/api";
 
 export default function AdminDashboard() {
   const { profile, isAuthenticated, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("users");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(
+    location.state?.activeTab === "contests" ? "contests" : "users"
+  );
 
   useEffect(() => {
     document.title = "Admin Dashboard | CodeDour";

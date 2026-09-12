@@ -6,7 +6,7 @@ import {
   Clock3,
   Users,
   Play,
-  ArrowRight,
+  Plus,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -180,9 +180,18 @@ export default function Contests() {
             )}
 
             {/* Upcoming Contests */}
-            <h2 className="mt-14 mb-6 text-2xl font-bold">
-              Upcoming Contests
-            </h2>
+            <div className="mt-14 mb-4">
+              <Link
+                to="/admin"
+                state={{ activeTab: "contests" }}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold transition hover:bg-indigo-400"
+              >
+                <Plus size={16} />
+                Create Contest
+              </Link>
+            </div>
+
+            <h2 className="mb-6 text-2xl font-bold">Upcoming Contests</h2>
 
             {upcomingContests.length === 0 ? (
               <p className="text-slate-500">
@@ -226,8 +235,8 @@ export default function Contests() {
                       to={`/contests/${contest.contest_id}`}
                       className="mt-6 flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2 font-medium transition hover:bg-indigo-400"
                     >
-                      Register
-                      <ArrowRight size={16} />
+                      Enter
+                      <Play size={16} />
                     </Link>
                   </div>
                 ))}
