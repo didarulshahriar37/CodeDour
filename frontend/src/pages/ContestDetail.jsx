@@ -398,7 +398,9 @@ export default function ContestDetail() {
                         state={{ contestId: contest.contest_id }}
                         className="flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400"
                       >
-                        Solve
+                        {solvedProblemIds.has(problem.problem_id)
+                          ? "Try Again"
+                          : "Solve"}
                         <ArrowRight size={16} />
                       </Link>
                     </td>
