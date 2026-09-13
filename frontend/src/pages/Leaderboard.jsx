@@ -112,9 +112,7 @@ function GlobalLeaderboard() {
         setTotal(data.total);
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err.message || "Couldn't load the leaderboard."
-          );
+          setError(err.message || "Couldn't load the leaderboard.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -282,39 +280,90 @@ function GlobalLeaderboard() {
 function ContestLeaderboardTab() {
   const [contests, setContests] = useState([]);
   const [selectedContest, setSelectedContest] = useState(null);
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
   const [entries, setEntries] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] = useState(false);
   const [contestsLoading, setContestsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  /*
+   * Load only contests that:
+   * 1. Have ended
+   * 2. The current user participated/registered in
+   */
   useEffect(() => {
     let cancelled = false;
 
     async function loadContests() {
+      setContestsLoading(true);
+      setError(null);
+
       try {
-        const data = await contestService.getContests({
-          status: "ended",
-        });
+        /*
+         * IMPORTANT:
+         * getContests() expects a string, not an object.
+         *
+         * Correct:
+         * getContests("ended")
+         *
+         * NOT:
+         * getContests({ status: "ended" })
+         */
+        const data = await contestService.getContests("ended");
 
         if (cancelled) return;
 
-        setContests(data.contests || []);
+        /*
+         * Backend already returns `is_registered`
+         * for the currently logged-in user.
+         *
+         * So we only show contests where the user
+         * participated/registered.
+         */
+        const participatedContests = (data.contests || []).filter(
+          (contest) => contest.is_registered === true
+        );
 
-        if (data.contests?.length > 0 && !selectedContest) {
-          setSelectedContest(data.contests[0]);
+        setContests(participatedContests);
+
+        /*
+         * Automatically select the first participated contest.
+         */
+        if (participatedContests.length > 0) {
+          setSelectedContest((currentSelected) => {
+            /*
+             * Keep the current selection if it still exists
+             * in the filtered contest list.
+             */
+            if (
+              currentSelected &&
+              participatedContests.some(
+                (contest) =>
+                  contest.contest_id === currentSelected.contest_id
+              )
+            ) {
+              return currentSelected;
+            }
+
+            return participatedContests[0];
+          });
+        } else {
+          setSelectedContest(null);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err.message || "Couldn't load contests."
-          );
+          setError(err.message || "Couldn't load your contests.");
         }
       } finally {
-        if (!cancelled) setContestsLoading(false);
+        if (!cancelled) {
+          setContestsLoading(false);
+        }
       }
     }
 
@@ -325,8 +374,16 @@ function ContestLeaderboardTab() {
     };
   }, []);
 
+  /*
+   * Load leaderboard whenever the selected contest,
+   * page, or search query changes.
+   */
   useEffect(() => {
-    if (!selectedContest) return;
+    if (!selectedContest) {
+      setEntries([]);
+      setTotal(0);
+      return;
+    }
 
     let cancelled = false;
 
@@ -345,17 +402,18 @@ function ContestLeaderboardTab() {
 
         if (cancelled) return;
 
-        setEntries(data.items);
-        setTotal(data.total);
+        setEntries(data.items || []);
+        setTotal(data.total || 0);
       } catch (err) {
         if (!cancelled) {
           setError(
-            err.message ||
-              "Couldn't load contest leaderboard."
+            err.message || "Couldn't load contest leaderboard."
           );
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -377,16 +435,22 @@ function ContestLeaderboardTab() {
     Math.ceil(total / PAGE_SIZE)
   );
 
+  /*
+   * Loading participated contests
+   */
   if (contestsLoading) {
     return (
       <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
         <Loader2 className="animate-spin" size={20} />
-        Loading contests...
+        Loading your contests...
       </div>
     );
   }
 
-  if (error) {
+  /*
+   * Error while loading contests
+   */
+  if (error && !selectedContest) {
     return (
       <div className="mt-16 text-center text-red-400">
         {error}
@@ -394,39 +458,67 @@ function ContestLeaderboardTab() {
     );
   }
 
+  /*
+   * User has not participated in any ended contest.
+   */
   if (!contests.length) {
     return (
-      <div className="mt-16 text-center text-slate-500">
-        No completed contests yet.
+      <div className="mt-16 text-center">
+        <div className="flex justify-center mb-4">
+          <Users className="text-slate-600" size={42} />
+        </div>
+
+        <p className="text-slate-400 text-lg">
+          You haven't participated in any completed contests yet.
+        </p>
+
+        <p className="mt-2 text-sm text-slate-600">
+          Your contest results will appear here after you participate
+          in a contest.
+        </p>
       </div>
     );
   }
 
   return (
     <>
+      {/* Contest selector + search */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-        <select
-          value={selectedContest?.contest_id || ""}
-          onChange={(e) => {
-            const contest = contests.find(
-              (c) =>
-                c.contest_id.toString() === e.target.value
-            );
+        <div className="w-full sm:w-auto">
+          <label className="mb-2 block text-sm font-medium text-slate-400">
+            Your completed contests
+          </label>
 
-            setSelectedContest(contest);
-            setPage(1);
-          }}
-          className="w-full sm:w-auto rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        >
-          {contests.map((contest) => (
-            <option
-              key={contest.contest_id}
-              value={contest.contest_id}
-            >
-              {contest.title}
-            </option>
-          ))}
-        </select>
+          <select
+            value={selectedContest?.contest_id || ""}
+            onChange={(e) => {
+              const contest = contests.find(
+                (c) =>
+                  c.contest_id.toString() === e.target.value
+              );
+
+              setSelectedContest(contest || null);
+              setPage(1);
+
+              /*
+               * Clear search when switching contests
+               * so the new contest starts clean.
+               */
+              setSearch("");
+              setSearchQuery("");
+            }}
+            className="w-full sm:w-auto min-w-[240px] rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            {contests.map((contest) => (
+              <option
+                key={contest.contest_id}
+                value={contest.contest_id}
+              >
+                {contest.title}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <form
           onSubmit={handleSearch}
@@ -449,6 +541,38 @@ function ContestLeaderboardTab() {
         </form>
       </div>
 
+      {/* Selected contest information */}
+      {selectedContest && (
+        <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-white">
+                {selectedContest.title}
+              </h2>
+
+              {selectedContest.description && (
+                <p className="mt-1 text-sm text-slate-500">
+                  {selectedContest.description}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Users size={16} />
+              {selectedContest.participant_count || 0} participants
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error while loading leaderboard */}
+      {!loading && error && (
+        <div className="mt-8 text-center text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Loading leaderboard */}
       {loading && (
         <div className="mt-16 flex items-center justify-center gap-2 text-slate-500">
           <Loader2 className="animate-spin" size={20} />
@@ -456,18 +580,14 @@ function ContestLeaderboardTab() {
         </div>
       )}
 
-      {!loading && error && (
-        <div className="mt-16 text-center text-red-400">
-          {error}
-        </div>
-      )}
-
+      {/* No standings */}
       {!loading && !error && entries.length === 0 && (
         <div className="mt-16 text-center text-slate-500">
-          No standings yet.
+          No standings available for this contest yet.
         </div>
       )}
 
+      {/* Leaderboard table */}
       {!loading && !error && entries.length > 0 && (
         <>
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
@@ -517,7 +637,9 @@ function ContestLeaderboardTab() {
                       className={
                         entry.newRating > entry.oldRating
                           ? "text-green-400"
-                          : "text-red-400"
+                          : entry.newRating < entry.oldRating
+                          ? "text-red-400"
+                          : "text-slate-400"
                       }
                     >
                       {entry.newRating > entry.oldRating
@@ -531,6 +653,7 @@ function ContestLeaderboardTab() {
             </table>
           </div>
 
+          {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
             <span>
               Page {page} of {totalPages} · {total} participants
