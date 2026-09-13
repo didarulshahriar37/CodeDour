@@ -2,8 +2,10 @@ const pool = require('../config/db');
 
 const getAllProblems = async (req, res, next) => {
     try {
-        const { difficulty, search, page = 1, limit = 20 } = req.query;
-        const offset = (page - 1) * limit;
+        const { difficulty, search, page = 1, limit = 10 } = req.query;
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 10;
+        const offset = (pageNum - 1) * limitNum;
 
         let userId = null;
         if (req.user?.uid) {
@@ -14,6 +16,23 @@ const getAllProblems = async (req, res, next) => {
                 userId = userResult.rows[0].user_id;
             }
         }
+
+        const countResult = await pool.query(
+            `SELECT COUNT(DISTINCT p.problem_id)::int AS total
+             FROM problems p
+             WHERE p.is_public = TRUE
+               AND ($1::text IS NULL OR p.difficulty = $1)
+               AND ($2::text IS NULL OR p.title ILIKE '%' || $2 || '%' OR p.slug ILIKE '%' || $2 || '%')
+               AND p.problem_id NOT IN (
+                   SELECT cp.problem_id 
+                   FROM contest_problems cp
+                   JOIN contests c ON cp.contest_id = c.contest_id
+                   WHERE c.is_published = TRUE AND NOW() BETWEEN c.start_time AND c.end_time
+               )`,
+            [difficulty || null, search || null]
+        );
+        const total = countResult.rows[0]?.total || 0;
+        const totalPages = Math.ceil(total / limitNum) || 1;
 
         const result = await pool.query(
             `SELECT p.problem_id, p.slug, p.title, p.difficulty, p.total_submissions, p.accepted_submissions,
@@ -41,10 +60,14 @@ const getAllProblems = async (req, res, next) => {
              GROUP BY p.problem_id, p.slug, p.title, p.difficulty, p.total_submissions, p.accepted_submissions, u.username, p.created_at
              ORDER BY p.problem_id ASC
              LIMIT $4 OFFSET $5`,
-            [difficulty || null, search || null, userId, limit, offset]
+            [difficulty || null, search || null, userId, limitNum, offset]
         );
         res.status(200).json({ 
-            problems: result.rows 
+            problems: result.rows,
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages
         });
     } catch (error) {
         next(error);

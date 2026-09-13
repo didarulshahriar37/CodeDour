@@ -7,6 +7,8 @@ import {
   Circle,
   ArrowRight,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import problemService from "../services/problemService";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +17,9 @@ export default function Problems() {
   const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("All");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     document.title = "Problems | CodeDour";
@@ -33,6 +38,8 @@ export default function Problems() {
 
       try {
         const data = await problemService.getProblems({
+          page,
+          limit: 10,
           search: search || undefined,
           difficulty: difficulty === "All" ? undefined : difficulty,
         });
@@ -40,6 +47,8 @@ export default function Problems() {
         if (cancelled) return;
 
         setProblems(data.problems || data.items || []);
+        setTotal(data.total || (data.problems ? data.problems.length : 0));
+        setTotalPages(data.totalPages || 1);
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Failed to load problems");
@@ -56,7 +65,7 @@ export default function Problems() {
     return () => {
       cancelled = true;
     };
-  }, [search, difficulty]);
+  }, [search, difficulty, page]);
 
   const difficultyColor = (diff) => {
     switch (diff) {
@@ -93,7 +102,10 @@ export default function Problems() {
             aria-label="Search problems"
             placeholder="Search problems..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="w-full rounded-lg border border-slate-800 bg-slate-900 py-3 pl-12 pr-4 outline-none focus:border-indigo-500"
           />
         </div>
@@ -103,7 +115,10 @@ export default function Problems() {
 
           <select
             value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
+            onChange={(e) => {
+              setDifficulty(e.target.value);
+              setPage(1);
+            }}
             className="rounded-lg border border-slate-800 bg-slate-900 py-3 pl-10 pr-8 outline-none focus:border-indigo-500"
           >
             <option value="All">All</option>
@@ -235,12 +250,66 @@ export default function Problems() {
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION CONTROLS */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-slate-400">
+              Showing{" "}
+              <span className="font-semibold text-white">
+                {(page - 1) * 10 + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold text-white">
+                {Math.min(page * 10, total)}
+              </span>{" "}
+              of <span className="font-semibold text-white">{total}</span>{" "}
+              problems
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium transition hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`rounded-lg px-3.5 py-2 text-sm font-semibold transition ${
+                      page === pageNum
+                        ? "bg-indigo-600 text-white"
+                        : "border border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium transition hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900"
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mx-auto mt-10 max-w-7xl px-6 pb-10">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="text-3xl font-bold">{problems.length}</h2>
+            <h2 className="text-3xl font-bold">{total || problems.length}</h2>
             <p className="mt-2 text-slate-400">Total Problems</p>
           </div>
 
@@ -248,12 +317,12 @@ export default function Problems() {
             <h2 className="text-3xl font-bold text-green-400">
               {problems.filter((p) => p.solved).length}
             </h2>
-            <p className="mt-2 text-slate-400">Solved</p>
+            <p className="mt-2 text-slate-400">Solved on page</p>
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-3xl font-bold text-indigo-400">
-              {problems.length -
+              {(total || problems.length) -
                 problems.filter((p) => p.solved).length}
             </h2>
             <p className="mt-2 text-slate-400">Remaining</p>
