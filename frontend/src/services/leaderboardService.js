@@ -40,6 +40,8 @@ async function getContestLeaderboard(params = {}) {
     avatarUrl: row.avatar_url,
     score: row.score,
     penalty: row.penalty,
+    problemsSolved: row.problems_solved || 0,
+    rating: row.rating,
     oldRating: row.old_rating,
     newRating: row.new_rating,
   }));

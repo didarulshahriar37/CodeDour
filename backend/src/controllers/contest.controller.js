@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { processContestRatings } = require('../utils/ratingProcessor');
 
 const getAllContests = async (req, res, next) => {
     try {
@@ -31,6 +32,15 @@ const getAllContests = async (req, res, next) => {
         `, [currentUserId]);
 
         let contests = result.rows;
+
+        contests.forEach(c => {
+            if (c.status === 'ended') {
+                processContestRatings(c.contest_id, false).catch(err => {
+                    console.error(`Background rating processing failed for contest ${c.contest_id}:`, err.message);
+                });
+            }
+        });
+
         if (status) {
             contests = contests.filter(c => c.status === status);
             if (status === 'upcoming') {
@@ -86,6 +96,14 @@ const getContestById = async (req, res, next) => {
         }
 
         const contest = contestResult.rows[0];
+
+        if (contest.status === 'ended') {
+            try {
+                await processContestRatings(contest.contest_id, false);
+            } catch (rErr) {
+                console.error('Error auto-processing ratings in getContestById:', rErr.message);
+            }
+        }
 
         const isOwner = currentUserId && contest.created_by === currentUserId;
         const isAdmin = currentUserRole === 'admin';
@@ -264,7 +282,7 @@ const recalculateContestRatings = async (req, res, next) => {
             });
         }
 
-        await pool.query(`SELECT update_contest_ratings($1)`, [contest.contest_id]);
+        await processContestRatings(contest.contest_id, true);
 
         res.status(200).json({
             message: 'Contest ratings updated and leaderboard refreshed successfully',
@@ -388,7 +406,7 @@ const closeContest = async (req, res, next) => {
         `, [contest.contest_id]);
 
         try {
-            await pool.query(`SELECT update_contest_ratings($1)`, [contest.contest_id]);
+            await processContestRatings(contest.contest_id, true);
         } catch (ratingError) {
             console.error('Rating recalculation on close error:', ratingError.message);
         }

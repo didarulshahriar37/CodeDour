@@ -30,7 +30,7 @@ const syncUser = async(req, res, next) => {
         }
 
         const result = await pool.query(
-            `INSERT INTO users (firebase_uid, username, email, display_name, avatar_url, rating, max_rating) VALUES ($1, $2, $3, $4, $5, 0, 0) RETURNING *`,[uid, username, email, displayName, avatar]
+            `INSERT INTO users (firebase_uid, username, email, display_name, avatar_url, rating, max_rating) VALUES ($1, $2, $3, $4, $5, 1500, 1500) RETURNING *`,[uid, username, email, displayName, avatar]
         );
 
         res.status(200).json({

@@ -1120,64 +1120,73 @@ export default function ContestDetail() {
               <table className="w-full text-left">
                 <thead className="bg-slate-900 text-sm text-slate-400">
                   <tr>
-                    <th className="px-6 py-4">
-                      Rank
-                    </th>
-
-                    <th className="px-6 py-4">
-                      User
-                    </th>
-
-                    <th className="px-6 py-4">
-                      Score
-                    </th>
-
-                    <th className="px-6 py-4">
-                      Penalty
-                    </th>
-
-                    <th className="px-6 py-4">
-                      Rating
-                    </th>
+                    <th className="px-6 py-4">Rank</th>
+                    <th className="px-6 py-4">Participant</th>
+                    <th className="px-6 py-4 text-center">Solved</th>
+                    <th className="px-6 py-4 text-center">Score</th>
+                    <th className="px-6 py-4 text-center">Penalty</th>
+                    <th className="px-6 py-4 text-right">Rating</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {leaderboardEntries.map(
-                    (entry) => (
-                      <tr
-                        key={entry.userId}
-                        className="border-t border-slate-800"
-                      >
-                        <td className="px-6 py-4 font-semibold">
-                          #{entry.rank}
-                        </td>
+                  {leaderboardEntries.map((entry) => (
+                    <tr
+                      key={entry.userId}
+                      className="border-t border-slate-800 transition hover:bg-slate-900/40"
+                    >
+                      <td className="px-6 py-4 font-bold text-indigo-400">
+                        #{entry.rank}
+                      </td>
 
-                        <td className="px-6 py-4">
-                          <Link
-                            to={`/profile/${entry.userId}`}
-                            className="font-medium hover:text-indigo-300"
-                          >
-                            {entry.displayName ||
-                              entry.username}
-                          </Link>
-                        </td>
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/profile/${entry.userId}`}
+                          className="flex items-center gap-3 font-medium hover:text-indigo-300"
+                        >
+                          {entry.avatarUrl ? (
+                            <img
+                              src={entry.avatarUrl}
+                              alt=""
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                              {(entry.displayName || entry.username || "U")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-semibold text-white hover:text-indigo-300">
+                              {entry.displayName || entry.username}
+                            </div>
+                            {entry.displayName && entry.username && (
+                              <div className="text-xs text-slate-500">
+                                @{entry.username}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </td>
 
-                        <td className="px-6 py-4">
-                          {entry.score}
-                        </td>
+                      <td className="px-6 py-4 text-center font-semibold text-emerald-400">
+                        {entry.problemsSolved ?? 0}
+                      </td>
 
-                        <td className="px-6 py-4 text-slate-400">
-                          {entry.penalty}
-                        </td>
+                      <td className="px-6 py-4 text-center font-bold text-white">
+                        {entry.score}
+                      </td>
 
-                        <td className="px-6 py-4 text-slate-400">
-                          {entry.newRating ??
-                            "—"}
-                        </td>
-                      </tr>
-                    )
-                  )}
+                      <td className="px-6 py-4 text-center text-slate-400">
+                        {entry.penalty}
+                      </td>
+
+                      <td className="px-6 py-4 text-right text-slate-300">
+                        {entry.newRating ?? entry.rating ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}

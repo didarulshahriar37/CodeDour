@@ -115,9 +115,18 @@ export default function Contests() {
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hostedExpanded, setHostedExpanded] = useState(false);
-  const [upcomingExpanded, setUpcomingExpanded] = useState(false);
-  const [participatedExpanded, setParticipatedExpanded] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    upcoming: false,
+    hosted: false,
+    history: false,
+  });
+
+  const toggleSection = (sectionKey) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -168,8 +177,9 @@ export default function Contests() {
 
   const hostedContests = contests.filter(
     (contest) =>
-      profile?.display_name &&
-      contest.created_by_name === profile.display_name
+      profile?.user_id &&
+      contest.created_by &&
+      Number(contest.created_by) === Number(profile.user_id)
   );
   const latestHostedContest = hostedContests[0];
   const enteredContestIds = new Set(
@@ -281,13 +291,13 @@ export default function Contests() {
               </Link>
             </div>
 
-            <div className="mb-14 grid gap-5 lg:grid-cols-3">
+            <div className="mb-14 grid items-start gap-5 lg:grid-cols-3">
               <CollapsibleContestSection
                 title="Upcoming Contests"
                 latestContest={upcomingContests[0]}
                 contests={upcomingContests}
-                expanded={upcomingExpanded}
-                onToggle={() => setUpcomingExpanded((expanded) => !expanded)}
+                expanded={Boolean(expandedSections.upcoming)}
+                onToggle={() => toggleSection("upcoming")}
                 emptyText="No upcoming contests."
                 enteredContestIds={enteredContestIds}
               />
@@ -295,8 +305,8 @@ export default function Contests() {
                 title="My Hosted Contests"
                 latestContest={latestHostedContest}
                 contests={hostedContests}
-                expanded={hostedExpanded}
-                onToggle={() => setHostedExpanded((expanded) => !expanded)}
+                expanded={Boolean(expandedSections.hosted)}
+                onToggle={() => toggleSection("hosted")}
                 emptyText="You have not hosted a contest yet."
                 enteredContestIds={enteredContestIds}
               />
@@ -304,8 +314,8 @@ export default function Contests() {
                 title="My Contest History"
                 latestContest={latestHistoryContest}
                 contests={contestHistory}
-                expanded={participatedExpanded}
-                onToggle={() => setParticipatedExpanded((expanded) => !expanded)}
+                expanded={Boolean(expandedSections.history)}
+                onToggle={() => toggleSection("history")}
                 emptyText="You have not completed a contest yet."
                 enteredContestIds={enteredContestIds}
               />
