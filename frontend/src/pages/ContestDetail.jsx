@@ -15,6 +15,7 @@ import {
 import contestService from "../services/contestService";
 import { useAuth } from "../context/AuthContext";
 import submissionService from "../services/submissionService";
+import leaderboardService from "../services/leaderboardService";
 
 const difficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -66,6 +67,8 @@ export default function ContestDetail() {
   const [error, setError] = useState(null);
   const [membershipAction, setMembershipAction] = useState(null);
   const [solvedProblemIds, setSolvedProblemIds] = useState(new Set());
+  const [leaderboardEntries, setLeaderboardEntries] = useState(null);
+  const [leaderboardError, setLeaderboardError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +144,40 @@ export default function ContestDetail() {
       cancelled = true;
     };
   }, [contest?.contest_id, contest?.is_registered, problems]);
+
+  useEffect(() => {
+    if (activeTab !== "leaderboard" || !contest?.contest_id) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadLeaderboard() {
+      try {
+        const data = await leaderboardService.getContestLeaderboard({
+          contestId: contest.contest_id,
+          pageSize: 100,
+        });
+
+        if (!cancelled) {
+          setLeaderboardEntries(data.items || []);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setLeaderboardError(
+            requestError.message || "Couldn't load contest standings."
+          );
+          setLeaderboardEntries([]);
+        }
+      }
+    }
+
+    loadLeaderboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, contest?.contest_id]);
 
   const handleEnter = async () => {
     setMembershipAction("enter");
@@ -413,17 +450,52 @@ export default function ContestDetail() {
 
         {activeTab === "leaderboard" && (
           <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
-            <div className="px-6 py-10 text-center">
-              <Trophy
-                size={32}
-                className="mx-auto mb-3 text-yellow-400"
-              />
-
-              <p className="text-slate-400">
-                Contest standings are not available from the current contest
-                API.
-              </p>
-            </div>
+            {leaderboardEntries === null ? (
+              <div className="flex items-center justify-center px-6 py-10 text-sm text-slate-400">
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                Loading standings...
+              </div>
+            ) : leaderboardError ? (
+              <div className="px-6 py-10 text-center text-sm text-red-400">
+                {leaderboardError}
+              </div>
+            ) : leaderboardEntries.length === 0 ? (
+              <div className="px-6 py-10 text-center">
+                <Trophy size={32} className="mx-auto mb-3 text-yellow-400" />
+                <p className="text-slate-400">
+                  No contest submissions have been ranked yet.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="bg-slate-900 text-sm text-slate-400">
+                  <tr>
+                    <th className="px-6 py-4">Rank</th>
+                    <th className="px-6 py-4">User</th>
+                    <th className="px-6 py-4">Score</th>
+                    <th className="px-6 py-4">Penalty</th>
+                    <th className="px-6 py-4">Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboardEntries.map((entry) => (
+                    <tr key={entry.userId} className="border-t border-slate-800">
+                      <td className="px-6 py-4 font-semibold">#{entry.rank}</td>
+                      <td className="px-6 py-4">
+                        <Link to={`/profile/${entry.userId}`} className="font-medium hover:text-indigo-300">
+                          {entry.displayName || entry.username}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">{entry.score}</td>
+                      <td className="px-6 py-4 text-slate-400">{entry.penalty}</td>
+                      <td className="px-6 py-4 text-slate-400">
+                        {entry.newRating ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>
