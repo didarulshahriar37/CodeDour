@@ -79,9 +79,10 @@ const getContestById = async (req, res, next) => {
 
         const contest = contestResult.rows[0];
 
+        const isOwner = currentUserId && contest.created_by === currentUserId;
+        const isAdmin = currentUserRole === 'admin';
+
         if (!contest.is_published) {
-            const isOwner = currentUserId && contest.created_by === currentUserId;
-            const isAdmin = currentUserRole === 'admin';
             if (!isOwner && !isAdmin) {
                 return res.status(403).json({
                     error: 'Access denied. This contest is not published yet.'
@@ -89,15 +90,21 @@ const getContestById = async (req, res, next) => {
             }
         }
 
-        const problemsResult = await pool.query(`
-            SELECT p.problem_id, p.slug, p.title, p.difficulty, cp.problem_order, cp.points
-            FROM contest_problems cp
-            JOIN problems p ON cp.problem_id = p.problem_id WHERE cp.contest_id = $1 ORDER BY cp.problem_order ASC
-        `, [contest.contest_id]);
+        let problems = [];
+        if (contest.status === 'running' && !contest.is_registered && !isOwner && !isAdmin) {
+            problems = [];
+        } else {
+            const problemsResult = await pool.query(`
+                SELECT p.problem_id, p.slug, p.title, p.difficulty, cp.problem_order, cp.points
+                FROM contest_problems cp
+                JOIN problems p ON cp.problem_id = p.problem_id WHERE cp.contest_id = $1 ORDER BY cp.problem_order ASC
+            `, [contest.contest_id]);
+            problems = problemsResult.rows;
+        }
 
         res.status(200).json({ 
             contest, 
-            problems: problemsResult.rows 
+            problems 
         });
     } catch (error) {
         next(error);

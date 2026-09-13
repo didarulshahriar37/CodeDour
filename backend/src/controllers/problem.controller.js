@@ -48,6 +48,17 @@ const getAllProblems = async (req, res, next) => {
 const getProblemById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        let currentUserId = null;
+        let currentUserRole = null;
+
+        if (req.user) {
+            const userRes = await pool.query(`SELECT user_id, role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+            if (userRes.rows.length > 0) {
+                currentUserId = userRes.rows[0].user_id;
+                currentUserRole = userRes.rows[0].role;
+            }
+        }
+
         const result = await pool.query(
             `SELECT p.problem_id, p.slug, p.title, p.description, p.input_format, p.output_format, p.constraints, p.difficulty, p.time_limit, p.memory_limit, p.author_id, p.is_public, p.total_submissions, p.accepted_submissions, u.username AS author_name, COALESCE(ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags FROM problems p LEFT JOIN users u ON p.author_id = u.user_id LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id LEFT JOIN tags t ON pt.tag_id = t.tag_id WHERE p.slug = $1 OR p.problem_id::text = $1 GROUP BY p.problem_id, u.username`, [id]
         );
@@ -57,16 +68,43 @@ const getProblemById = async (req, res, next) => {
             });
         }
 
+        const problem = result.rows[0];
+
+        const activeContestCheck = await pool.query(`
+            SELECT c.contest_id, c.created_by,
+                   COALESCE(bool_or(cp_user.user_id IS NOT NULL), FALSE) AS is_registered
+            FROM contest_problems cp
+            JOIN contests c ON cp.contest_id = c.contest_id
+            LEFT JOIN contest_participants cp_user ON c.contest_id = cp_user.contest_id AND cp_user.user_id = $2
+            WHERE cp.problem_id = $1 
+              AND c.is_published = TRUE 
+              AND NOW() BETWEEN c.start_time AND c.end_time
+            GROUP BY c.contest_id, c.created_by
+        `, [problem.problem_id, currentUserId]);
+
+        if (activeContestCheck.rows.length > 0) {
+            const contestInfo = activeContestCheck.rows[0];
+            const isOwner = currentUserId && contestInfo.created_by === currentUserId;
+            const isAdmin = currentUserRole === 'admin';
+            const isRegistered = contestInfo.is_registered;
+
+            if (!isRegistered && !isOwner && !isAdmin) {
+                return res.status(403).json({
+                    error: 'Access denied. This problem is currently part of an active contest. You must register for the contest to access it.'
+                });
+            }
+        }
+
         const testCases = await pool.query(
             `SELECT test_case_id, input, expected_output, is_sample, explanation
              FROM test_cases
              WHERE problem_id = $1
              ORDER BY is_sample DESC, test_case_id ASC`,
-            [result.rows[0].problem_id]
+            [problem.problem_id]
         );
 
         res.status(200).json({
-            problem: result.rows[0],
+            problem,
             sample_test_cases: testCases.rows.filter(tc => tc.is_sample),
             test_cases: testCases.rows
         });

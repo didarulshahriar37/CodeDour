@@ -5,7 +5,7 @@ const { getAllProblems, getProblemById, createProblem, getRecommendedByTags } = 
 
 router.get('/', optionalVerifyToken, getAllProblems);
 router.get('/:id/recommendations', getRecommendedByTags);
-router.get('/:id', getProblemById);
+router.get('/:id', optionalVerifyToken, getProblemById);
 router.post('/', verifyToken, createProblem);
 
 module.exports = router;
