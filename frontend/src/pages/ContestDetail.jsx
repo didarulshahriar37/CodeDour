@@ -116,6 +116,7 @@ export default function ContestDetail() {
           try {
             const data = await submissionService.getSubmissions({
               problemId: problem.problem_id,
+              contestId: contest.contest_id,
               status: "accepted",
               pageSize: 100,
             });
@@ -139,7 +140,7 @@ export default function ContestDetail() {
     return () => {
       cancelled = true;
     };
-  }, [contest?.is_registered, problems]);
+  }, [contest?.contest_id, contest?.is_registered, problems]);
 
   const handleEnter = async () => {
     setMembershipAction("enter");
