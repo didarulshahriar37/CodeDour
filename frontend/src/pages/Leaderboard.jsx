@@ -226,7 +226,7 @@ function GlobalLeaderboard() {
 
                     <td className="font-medium">
                       <Link
-                        to={`/users/${entry.username}`}
+                        to={`/profile/${entry.userId}`}
                         className="hover:text-indigo-400"
                       >
                         {entry.username}
@@ -498,7 +498,7 @@ function ContestLeaderboardTab() {
 
                     <td className="font-medium">
                       <Link
-                        to={`/users/${entry.username}`}
+                        to={`/profile/${entry.userId}`}
                         className="hover:text-indigo-400"
                       >
                         {entry.username}
