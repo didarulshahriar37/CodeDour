@@ -3,17 +3,33 @@ const pool = require('../config/db');
 const getAllContests = async (req, res, next) => {
     try {
         const { status } = req.query;
-        const result = await pool.query(` SELECT  c.contest_id, c.title, c.slug, c.description, c.start_time, c.end_time,c.duration_minutes,c.is_published,c.created_at, u.display_name AS created_by_name, COUNT(cp.user_id)::int AS participant_count,
+        let currentUserId = null;
+
+        if (req.user) {
+            const userRes = await pool.query(`SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+            if (userRes.rows.length > 0) {
+                currentUserId = userRes.rows[0].user_id;
+            }
+        }
+
+        const result = await pool.query(`
+            SELECT 
+                c.contest_id, c.title, c.slug, c.description, c.start_time, c.end_time, c.duration_minutes, c.is_published, c.created_at, c.created_by, u.display_name AS created_by_name,
+                COUNT(DISTINCT cp.user_id)::int AS participant_count,
                 CASE 
                     WHEN NOW() < c.start_time THEN 'upcoming'
                     WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
                     ELSE 'ended'
-                END AS status
+                END AS status,
+                COALESCE(bool_or(cp.user_id = $1), FALSE) AS is_registered
             FROM contests c
             LEFT JOIN users u ON c.created_by = u.user_id
             LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id
-            WHERE c.is_published = TRUE GROUP BY c.contest_id, u.display_name ORDER BY c.start_time DESC
-        `);
+            WHERE c.is_published = TRUE 
+            GROUP BY c.contest_id, c.created_by, u.display_name 
+            ORDER BY c.start_time DESC
+        `, [currentUserId]);
+
         let contests = result.rows;
         if (status) {
             contests = contests.filter(c => c.status === status);
@@ -27,17 +43,33 @@ const getAllContests = async (req, res, next) => {
 const getContestById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        let currentUserId = null;
+        let currentUserRole = null;
+
+        if (req.user) {
+            const userRes = await pool.query(`SELECT user_id, role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+            if (userRes.rows.length > 0) {
+                currentUserId = userRes.rows[0].user_id;
+                currentUserRole = userRes.rows[0].role;
+            }
+        }
+
         const contestResult = await pool.query(`
-            SELECT  c.contest_id,c.title, c.slug, c.description, c.start_time, c.end_time,c.duration_minutes,c.is_published,c.created_at,u.display_name AS created_by_name, COUNT(cp.user_id)::int AS participant_count,
+            SELECT 
+                c.contest_id, c.title, c.slug, c.description, c.start_time, c.end_time, c.duration_minutes, c.is_published, c.created_at, c.created_by, u.display_name AS created_by_name,
+                COUNT(DISTINCT cp.user_id)::int AS participant_count,
                 CASE 
                     WHEN NOW() < c.start_time THEN 'upcoming'
                     WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
                     ELSE 'ended'
-                END AS status
+                END AS status,
+                COALESCE(bool_or(cp.user_id = $2), FALSE) AS is_registered
             FROM contests c
             LEFT JOIN users u ON c.created_by = u.user_id
-            LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id WHERE c.contest_id::text = $1 OR c.slug = $1 GROUP BY c.contest_id, u.display_name
-        `, [id]);
+            LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id 
+            WHERE c.contest_id::text = $1 OR c.slug = $1 
+            GROUP BY c.contest_id, c.created_by, u.display_name
+        `, [id, currentUserId]);
 
         if (contestResult.rows.length === 0) {
             return res.status(404).json({ 
@@ -46,6 +78,16 @@ const getContestById = async (req, res, next) => {
         }
 
         const contest = contestResult.rows[0];
+
+        if (!contest.is_published) {
+            const isOwner = currentUserId && contest.created_by === currentUserId;
+            const isAdmin = currentUserRole === 'admin';
+            if (!isOwner && !isAdmin) {
+                return res.status(403).json({
+                    error: 'Access denied. This contest is not published yet.'
+                });
+            }
+        }
 
         const problemsResult = await pool.query(`
             SELECT p.problem_id, p.slug, p.title, p.difficulty, cp.problem_order, cp.points
