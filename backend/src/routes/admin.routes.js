@@ -8,7 +8,8 @@ const {
     updateProblem,
     deleteProblem,
     refreshViews,
-    deleteContest
+    deleteContest,
+    getAllContestsAdmin
 } = require('../controllers/admin.controller');
 
 router.use(verifyAdmin);
@@ -20,6 +21,7 @@ router.delete('/users/:id', deleteUser);
 router.put('/problems/:id', updateProblem);
 router.delete('/problems/:id', deleteProblem);
 
+router.get('/contests', getAllContestsAdmin);
 router.delete('/contests/:id', deleteContest);
 router.post('/refresh-views', refreshViews);
 

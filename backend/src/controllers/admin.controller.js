@@ -167,6 +167,29 @@ const deleteContest = async (req, res, next) => {
     }
 };
 
+const getAllContestsAdmin = async (req, res, next) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                c.contest_id, c.title, c.slug, c.description, c.start_time, c.end_time, c.duration_minutes, c.is_published, c.created_at, c.created_by, u.display_name AS created_by_name,
+                COUNT(DISTINCT cp.user_id)::int AS participant_count,
+                CASE 
+                    WHEN NOW() < c.start_time THEN 'upcoming'
+                    WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
+                    ELSE 'ended'
+                END AS status
+            FROM contests c
+            LEFT JOIN users u ON c.created_by = u.user_id
+            LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id
+            GROUP BY c.contest_id, c.created_by, u.display_name
+            ORDER BY c.start_time DESC
+        `);
+        res.status(200).json({ contests: result.rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllUsers,
     updateUserRole,
@@ -174,5 +197,6 @@ module.exports = {
     updateProblem,
     deleteProblem,
     refreshViews,
-    deleteContest
+    deleteContest,
+    getAllContestsAdmin
 };
