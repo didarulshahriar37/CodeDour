@@ -153,13 +153,37 @@ const joinContest = async (req, res, next) => {
         }
         const userId = userRes.rows[0].user_id;
 
-        const contestRes = await pool.query(`SELECT contest_id, title FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        const contestRes = await pool.query(`
+            SELECT contest_id, title, is_published, start_time, end_time,
+                CASE 
+                    WHEN NOW() < start_time THEN 'upcoming'
+                    WHEN NOW() BETWEEN start_time AND end_time THEN 'running'
+                    ELSE 'ended'
+                END AS status 
+            FROM contests WHERE contest_id::text = $1 OR slug = $1
+        `, [id]);
+
         if (contestRes.rows.length === 0) {
             return res.status(404).json({ 
                 error: 'Contest not found' 
             });
         }
-        const contestId = contestRes.rows[0].contest_id;
+
+        const contest = contestRes.rows[0];
+
+        if (!contest.is_published) {
+            return res.status(403).json({ 
+                error: 'Cannot register for an unpublished contest.' 
+            });
+        }
+
+        if (contest.status !== 'upcoming') {
+            return res.status(400).json({ 
+                error: 'Registration is closed. You can only register for upcoming contests before they start.' 
+            });
+        }
+
+        const contestId = contest.contest_id;
 
         await pool.query(`
             INSERT INTO contest_participants (contest_id, user_id) VALUES ($1, $2) ON CONFLICT (contest_id, user_id) DO NOTHING
