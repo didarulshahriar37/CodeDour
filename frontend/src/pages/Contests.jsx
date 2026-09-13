@@ -266,7 +266,7 @@ export default function Contests() {
                   className="mt-8 flex w-fit items-center gap-2 rounded-lg bg-indigo-500 px-6 py-3 font-semibold transition hover:bg-indigo-400"
                 >
                   <Play size={18} />
-                  Enter Contest
+                  View Details
                 </Link>
               </div>
             )}
