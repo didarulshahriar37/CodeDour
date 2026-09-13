@@ -257,4 +257,37 @@ const addProblemsToContest = async (req, res, next) => {
     }
 };
 
-module.exports = { getAllContests, getContestById, createContest, joinContest, recalculateContestRatings, addProblemsToContest };
+const leaveContest = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userRes = await pool.query(`SELECT user_id FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'User not found' 
+            });
+        }
+        const userId = userRes.rows[0].user_id;
+
+        const contestRes = await pool.query(`SELECT contest_id FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        if (contestRes.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Contest not found' 
+            });
+        }
+        const contestId = contestRes.rows[0].contest_id;
+
+        await pool.query(`
+            DELETE FROM contest_participants WHERE contest_id = $1 AND user_id = $2
+        `, [contestId, userId]);
+
+        res.status(200).json({ 
+            message: 'Successfully left the contest',
+            contest_id: contestId,
+            user_id: userId
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getAllContests, getContestById, createContest, joinContest, leaveContest, recalculateContestRatings, addProblemsToContest };
