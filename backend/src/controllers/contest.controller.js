@@ -21,7 +21,7 @@ const getAllContests = async (req, res, next) => {
                     WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
                     ELSE 'ended'
                 END AS status,
-                COALESCE(bool_or(cp.user_id = $1), FALSE) AS is_registered
+                COALESCE(bool_or(cp.user_id = $1) OR (c.created_by = $1 AND $1 IS NOT NULL), FALSE) AS is_registered
             FROM contests c
             LEFT JOIN users u ON c.created_by = u.user_id
             LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id
@@ -63,7 +63,7 @@ const getContestById = async (req, res, next) => {
                     WHEN NOW() BETWEEN c.start_time AND c.end_time THEN 'running'
                     ELSE 'ended'
                 END AS status,
-                COALESCE(bool_or(cp.user_id = $2), FALSE) AS is_registered
+                COALESCE(bool_or(cp.user_id = $2) OR (c.created_by = $2 AND $2 IS NOT NULL), FALSE) AS is_registered
             FROM contests c
             LEFT JOIN users u ON c.created_by = u.user_id
             LEFT JOIN contest_participants cp ON c.contest_id = cp.contest_id 
@@ -131,6 +131,12 @@ const createContest = async (req, res, next) => {
         `, [title, slug, description || '', start_time, end_time, duration_minutes, is_published, createdBy]);
 
         const newContest = contestResult.rows[0];
+
+        if (createdBy) {
+            await pool.query(`
+                INSERT INTO contest_participants (contest_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING
+            `, [newContest.contest_id, createdBy]);
+        }
 
         if (problems && Array.isArray(problems) && problems.length > 0) {
             for (const item of problems) {
@@ -321,4 +327,52 @@ const leaveContest = async (req, res, next) => {
     }
 };
 
-module.exports = { getAllContests, getContestById, createContest, joinContest, leaveContest, recalculateContestRatings, addProblemsToContest };
+const closeContest = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const userRes = await pool.query(`SELECT user_id, role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+        if (userRes.rows.length === 0) {
+            return res.status(401).json({ 
+                error: 'User not found' 
+            });
+        }
+        const currentUser = userRes.rows[0];
+
+        const contestRes = await pool.query(`SELECT contest_id, created_by, is_published, start_time, end_time FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        if (contestRes.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Contest not found' 
+            });
+        }
+        const contest = contestRes.rows[0];
+
+        if (contest.created_by !== currentUser.user_id && currentUser.role !== 'admin') {
+            return res.status(403).json({ 
+                error: 'Access denied. Only the contest host or an admin can close this contest.' 
+            });
+        }
+
+        const updatedResult = await pool.query(`
+            UPDATE contests
+            SET end_time = NOW()
+            WHERE contest_id = $1
+            RETURNING contest_id, title, start_time, end_time, 'ended' AS status
+        `, [contest.contest_id]);
+
+        try {
+            await pool.query(`SELECT update_contest_ratings($1)`, [contest.contest_id]);
+        } catch (ratingError) {
+            console.error('Rating recalculation on close error:', ratingError.message);
+        }
+
+        res.status(200).json({ 
+            message: 'Contest closed successfully',
+            contest: updatedResult.rows[0]
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getAllContests, getContestById, createContest, joinContest, leaveContest, closeContest, recalculateContestRatings, addProblemsToContest };

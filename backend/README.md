@@ -110,10 +110,11 @@ backend/
 | Endpoint | Method | Access | Description |
 | :--- | :---: | :---: | :--- |
 | `/api/contests` | `GET` | Public (Optional Token) | List published contests with `status`, `created_by`, & `is_registered` status for signed-in users |
-| `/api/contests/:id` | `GET` | Public (Optional Token) | Get contest details, duration, & problems. Restricts unpublished draft contests to creator/admin |
+| `/api/contests/:id` | `GET` | Public (Optional Token) | Get contest details, duration, & problems. Restricts unpublished draft contests & live problems |
 | `/api/contests` | `POST` | Authenticated | Host a new custom contest with title, description, time window, & problems |
-| `/api/contests/:id/join` | `POST` | Authenticated | Register current user for a contest |
+| `/api/contests/:id/join` | `POST` | Authenticated | Register current user for an upcoming contest |
 | `/api/contests/:id/join` | `DELETE` | Authenticated | Unregister / leave a contest |
+| `/api/contests/:id/close` | `POST` | Host / Admin | Close a running contest early, update end time to NOW(), & recalculate standings |
 | `/api/contests/:id/problems` | `POST` | Host / Admin | Add or update problems in the contest problem set |
 | `/api/contests/:id/recalculate-ratings` | `POST` | Host / Admin | Calculate participant rating changes & refresh leaderboard matview |
 
