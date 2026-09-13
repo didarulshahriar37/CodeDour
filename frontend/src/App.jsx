@@ -12,10 +12,11 @@ import ProblemDetail from "./pages/ProblemDetail";
 import Contests from "./pages/Contests";
 import ContestDetail from "./pages/ContestDetail";
 import CreateContest from "./pages/CreateContest";
+import ManageContestProblems from "./pages/ManageContestProblems";
 import Submissions from "./pages/Submissions";
 import Leaderboard from "./pages/Leaderboard";
 import AdminDashboard from "./pages/AdminDashboard";
-
+ 
 function App() {
   return (
     <BrowserRouter>
@@ -35,6 +36,10 @@ function App() {
               <Route path="/contests" element={<Contests />} />
               <Route path="/contests/create" element={<CreateContest />} />
               <Route path="/contests/:id" element={<ContestDetail />} />
+              <Route
+                path="/contests/:id/manage-problems"
+                element={<ManageContestProblems />}
+              />
               <Route path="/leaderboard" element={<Leaderboard />} />
             </Route>
             <Route path="/submissions" element={<Submissions />} />
@@ -45,5 +50,6 @@ function App() {
     </BrowserRouter>
   );
 }
-
+ 
 export default App;
+ 
