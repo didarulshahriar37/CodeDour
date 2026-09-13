@@ -33,14 +33,6 @@ const getAllContests = async (req, res, next) => {
 
         let contests = result.rows;
 
-        contests.forEach(c => {
-            if (c.status === 'ended') {
-                processContestRatings(c.contest_id, false).catch(err => {
-                    console.error(`Background rating processing failed for contest ${c.contest_id}:`, err.message);
-                });
-            }
-        });
-
         if (status) {
             contests = contests.filter(c => c.status === status);
             if (status === 'upcoming') {
