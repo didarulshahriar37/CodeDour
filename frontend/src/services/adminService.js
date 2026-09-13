@@ -35,6 +35,11 @@ async function deleteContest(contestId) {
   return data;
 }
 
+async function getAllContests() {
+  const { data } = await api.get("/admin/contests");
+  return data.contests;
+}
+
 const adminService = {
   getAllUsers,
   updateUserRole,
@@ -43,6 +48,7 @@ const adminService = {
   updateProblem,
   deleteProblem,
   deleteContest,
+  getAllContests,
 };
 
 export default adminService;

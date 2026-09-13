@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import adminService from "../services/adminService";
 import problemService from "../services/problemService";
-import contestService from "../services/contestService";
 import api from "../services/api";
 
 export default function AdminDashboard() {
@@ -1245,8 +1244,8 @@ function ContestManagement() {
 
     async function loadContests() {
       try {
-        const data = await contestService.getContests();
-        if (!cancelled) setContests(data.contests || []);
+        const data = await adminService.getAllContests();
+        if (!cancelled) setContests(data || []);
       } catch (err) {
         console.error("Failed to fetch contests:", err);
         if (!cancelled) {
