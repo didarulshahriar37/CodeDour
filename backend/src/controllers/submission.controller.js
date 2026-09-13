@@ -25,7 +25,36 @@ const submitSolution = async (req, res, next) => {
 
         const userId = userResult.rows[0].user_id;
 
-        if (contest_id) {
+        const activeContestRes = await pool.query(`
+            SELECT c.contest_id, c.created_by
+            FROM contest_problems cp
+            JOIN contests c ON cp.contest_id = c.contest_id
+            WHERE cp.problem_id = $1 
+              AND c.is_published = TRUE 
+              AND NOW() BETWEEN c.start_time AND c.end_time
+            LIMIT 1
+        `, [problem_id]);
+
+        if (activeContestRes.rows.length > 0) {
+            const activeContestId = activeContestRes.rows[0].contest_id;
+
+            if (!contest_id || parseInt(contest_id, 10) !== parseInt(activeContestId, 10)) {
+                return res.status(403).json({
+                    error: `Access denied. Problem #${problem_id} belongs to an active live contest. You must submit with contest_id = ${activeContestId}.`
+                });
+            }
+
+            const participantCheck = await pool.query(
+                `SELECT 1 FROM contest_participants WHERE contest_id = $1 AND user_id = $2`,
+                [activeContestId, userId]
+            );
+
+            if (participantCheck.rows.length === 0) {
+                return res.status(403).json({
+                    error: 'Access denied. You must be a registered participant in the active contest to submit solutions.'
+                });
+            }
+        } else if (contest_id) {
             const participantCheck = await pool.query(
                 `SELECT 1 FROM contest_participants WHERE contest_id = $1 AND user_id = $2`,
                 [contest_id, userId]
