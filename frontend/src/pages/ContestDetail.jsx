@@ -115,6 +115,8 @@ export default function ContestDetail() {
 
   const [problems, setProblems] = useState([]);
 
+  const [participants, setParticipants] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState(null);
@@ -173,6 +175,7 @@ export default function ContestDetail() {
         });
 
         setProblems(data.problems || []);
+        setParticipants(data.participants || []);
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -426,6 +429,23 @@ export default function ContestDetail() {
             ) + 1,
         };
       });
+
+      if (profile) {
+        setParticipants((prev) => {
+          if (prev.some((p) => p.user_id === profile.user_id)) return prev;
+          return [
+            ...prev,
+            {
+              user_id: profile.user_id,
+              username: profile.username,
+              display_name: profile.display_name || profile.username,
+              avatar_url: profile.avatar_url,
+              rating: profile.rating || 1500,
+              registered_at: new Date().toISOString(),
+            },
+          ];
+        });
+      }
     } catch (err) {
       setError(
         err.message ||
@@ -471,6 +491,12 @@ export default function ContestDetail() {
           ),
         };
       });
+
+      if (profile) {
+        setParticipants((prev) =>
+          prev.filter((p) => p.user_id !== profile.user_id)
+        );
+      }
     } catch (err) {
       setError(
         err.message ||
@@ -640,16 +666,32 @@ export default function ContestDetail() {
             </div>
 
             {/* Participants */}
-            <div className="flex items-center gap-2">
-              <Users
-                size={18}
-                className="text-indigo-400"
-              />
+            {isHost || profile?.role === "admin" ? (
+              <button
+                onClick={() => setActiveTab("participants")}
+                className="flex cursor-pointer items-center gap-2 transition hover:text-indigo-300"
+              >
+                <Users
+                  size={18}
+                  className="text-indigo-400"
+                />
 
-              {contest.participant_count ||
-                0}{" "}
-              Participants
-            </div>
+                {contest.participant_count ||
+                  0}{" "}
+                Participants
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Users
+                  size={18}
+                  className="text-indigo-400"
+                />
+
+                {contest.participant_count ||
+                  0}{" "}
+                Participants
+              </div>
+            )}
 
             {/* Countdown */}
             {contest.status ===
@@ -845,6 +887,15 @@ export default function ContestDetail() {
               label: "Leaderboard",
               icon: Trophy,
             },
+            ...((isHost || profile?.role === "admin")
+              ? [
+                  {
+                    id: "participants",
+                    label: `Participants (${participants.length})`,
+                    icon: Users,
+                  },
+                ]
+              : []),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1127,6 +1178,85 @@ export default function ContestDetail() {
                       </tr>
                     )
                   )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* =================================================
+            PARTICIPANTS
+        ================================================= */}
+        {activeTab === "participants" && (
+          <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
+            {participants.length === 0 ? (
+              <div className="px-6 py-12 text-center text-slate-400">
+                <Users
+                  size={32}
+                  className="mx-auto mb-3 text-indigo-400 opacity-60"
+                />
+                <p className="font-semibold text-white">
+                  No registered participants yet
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  When users register for this contest, their names will appear here.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="bg-slate-900 text-sm text-slate-400">
+                  <tr>
+                    <th className="px-6 py-4">Participant</th>
+                    <th className="px-6 py-4">Rating</th>
+                    <th className="px-6 py-4">Registered At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {participants.map((p) => (
+                    <tr
+                      key={p.user_id}
+                      className="border-t border-slate-800 transition hover:bg-slate-900/40"
+                    >
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/profile/${p.user_id}`}
+                          className="flex items-center gap-3 font-medium hover:text-indigo-300"
+                        >
+                          {p.avatar_url ? (
+                            <img
+                              src={p.avatar_url}
+                              alt=""
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                              {(p.display_name || p.username || "U")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-semibold text-white hover:text-indigo-300">
+                              {p.display_name || p.username}
+                            </div>
+                            {p.display_name && p.username && (
+                              <div className="text-xs text-slate-500">
+                                @{p.username}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-300">
+                        {p.rating ?? 1500}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
+                        {p.registered_at
+                          ? new Date(p.registered_at).toLocaleString()
+                          : "N/A"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}

@@ -45,6 +45,11 @@ async function recalculateContestRatings(id) {
   );
   return data;
 }
+
+async function getContestParticipants(id) {
+  const { data } = await api.get(`/contests/${id}/participants`);
+  return data.participants;
+}
  
 const contestService = {
   getContests,
@@ -55,6 +60,7 @@ const contestService = {
   addProblemsToContest,
   closeContest,
   recalculateContestRatings,
+  getContestParticipants,
 };
  
 export default contestService;
@@ -68,4 +74,5 @@ export {
   addProblemsToContest,
   closeContest,
   recalculateContestRatings,
+  getContestParticipants,
 };

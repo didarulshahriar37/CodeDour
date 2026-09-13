@@ -184,7 +184,12 @@ const getAllContestsAdmin = async (req, res, next) => {
             GROUP BY c.contest_id, c.created_by, u.display_name
             ORDER BY c.start_time DESC
         `);
-        res.status(200).json({ contests: result.rows });
+        const upcoming = result.rows.filter(c => c.status === 'upcoming').sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        const running = result.rows.filter(c => c.status === 'running');
+        const ended = result.rows.filter(c => c.status === 'ended').sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+        const contests = [...running, ...upcoming, ...ended];
+
+        res.status(200).json({ contests });
     } catch (error) {
         next(error);
     }

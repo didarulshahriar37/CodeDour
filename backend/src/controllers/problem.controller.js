@@ -32,6 +32,12 @@ const getAllProblems = async (req, res, next) => {
              WHERE p.is_public = TRUE
                AND ($1::text IS NULL OR p.difficulty = $1)
                AND ($2::text IS NULL OR p.title ILIKE '%' || $2 || '%' OR p.slug ILIKE '%' || $2 || '%')
+               AND p.problem_id NOT IN (
+                   SELECT cp.problem_id 
+                   FROM contest_problems cp
+                   JOIN contests c ON cp.contest_id = c.contest_id
+                   WHERE c.is_published = TRUE AND NOW() BETWEEN c.start_time AND c.end_time
+               )
              GROUP BY p.problem_id, p.slug, p.title, p.difficulty, p.total_submissions, p.accepted_submissions, u.username, p.created_at
              ORDER BY p.problem_id ASC
              LIMIT $4 OFFSET $5`,

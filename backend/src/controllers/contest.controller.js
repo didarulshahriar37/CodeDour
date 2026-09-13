@@ -33,6 +33,14 @@ const getAllContests = async (req, res, next) => {
         let contests = result.rows;
         if (status) {
             contests = contests.filter(c => c.status === status);
+            if (status === 'upcoming') {
+                contests.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            }
+        } else {
+            const upcoming = contests.filter(c => c.status === 'upcoming').sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            const running = contests.filter(c => c.status === 'running');
+            const ended = contests.filter(c => c.status === 'ended').sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+            contests = [...running, ...upcoming, ...ended];
         }
         res.status(200).json({ contests });
     } catch (error) {
@@ -102,9 +110,28 @@ const getContestById = async (req, res, next) => {
             problems = problemsResult.rows;
         }
 
+        let participants = [];
+        if (isOwner || isAdmin) {
+            const participantsResult = await pool.query(`
+                SELECT 
+                    cp.user_id, 
+                    u.username, 
+                    u.display_name, 
+                    u.avatar_url, 
+                    u.rating, 
+                    cp.registered_at
+                FROM contest_participants cp
+                JOIN users u ON cp.user_id = u.user_id
+                WHERE cp.contest_id = $1
+                ORDER BY cp.registered_at ASC
+            `, [contest.contest_id]);
+            participants = participantsResult.rows;
+        }
+
         res.status(200).json({ 
             contest, 
-            problems 
+            problems,
+            participants
         });
     } catch (error) {
         next(error);
@@ -375,4 +402,63 @@ const closeContest = async (req, res, next) => {
     }
 };
 
-module.exports = { getAllContests, getContestById, createContest, joinContest, leaveContest, closeContest, recalculateContestRatings, addProblemsToContest };
+const getContestParticipants = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        let currentUserId = null;
+        let currentUserRole = null;
+
+        if (req.user) {
+            const userRes = await pool.query(`SELECT user_id, role FROM users WHERE firebase_uid = $1`, [req.user.uid]);
+            if (userRes.rows.length > 0) {
+                currentUserId = userRes.rows[0].user_id;
+                currentUserRole = userRes.rows[0].role;
+            }
+        }
+
+        const contestRes = await pool.query(`SELECT contest_id, created_by FROM contests WHERE contest_id::text = $1 OR slug = $1`, [id]);
+        if (contestRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Contest not found' });
+        }
+        const contest = contestRes.rows[0];
+
+        const isOwner = currentUserId && contest.created_by === currentUserId;
+        const isAdmin = currentUserRole === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ 
+                error: 'Access denied. Only the contest host can view the participant list.' 
+            });
+        }
+
+        const result = await pool.query(`
+            SELECT 
+                cp.user_id, 
+                u.username, 
+                u.display_name, 
+                u.avatar_url, 
+                u.rating, 
+                cp.registered_at
+            FROM contest_participants cp
+            JOIN users u ON cp.user_id = u.user_id
+            WHERE cp.contest_id = $1
+            ORDER BY cp.registered_at ASC
+        `, [contest.contest_id]);
+
+        res.status(200).json({ participants: result.rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { 
+    getAllContests, 
+    getContestById, 
+    createContest, 
+    joinContest, 
+    leaveContest, 
+    closeContest, 
+    recalculateContestRatings, 
+    addProblemsToContest,
+    getContestParticipants
+};
