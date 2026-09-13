@@ -103,7 +103,7 @@ async function getUserSubmissions(id) {
 }
  
 async function getUserAchievements(id) {
-  const { data } = await api.get(`/achievements/${id}`);
+  const { data } = await api.get(`/achievements/user/${id}`);
   return data;
 }
  

@@ -27,7 +27,7 @@ async function getGlobalLeaderboard(params = {}) {
 
 async function getContestLeaderboard(params = {}) {
   const { contestId, page = 1, pageSize = 20, search = '' } = params;
-  const { data } = await api.get(`/leaderboard/contest/${contestId}`, { 
+  const { data } = await api.get(`/leaderboard/${contestId}`, {
     params: { page, limit: pageSize, search } 
   });
   const rows = data.leaderboard || [];
