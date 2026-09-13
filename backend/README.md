@@ -99,8 +99,8 @@ backend/
 
 | Endpoint | Method | Access | Description |
 | :--- | :---: | :---: | :--- |
-| `/api/submissions` | `POST` | Authenticated | Submit code for Judge0 execution & record verdict in database |
-| `/api/submissions` | `GET` | Authenticated | List user's submissions with status & language filters |
+| `/api/submissions` | `POST` | Authenticated | Submit code for Judge0 execution & record verdict (validates contest registration if `contest_id` provided) |
+| `/api/submissions` | `GET` | Authenticated | List user's submissions with `status`, `language`, `problem_id`, and `contest_id` filters |
 | `/api/submissions/:id` | `GET` | Public | Get detailed verdict & execution metrics for a specific submission |
 
 ---
@@ -109,10 +109,11 @@ backend/
 
 | Endpoint | Method | Access | Description |
 | :--- | :---: | :---: | :--- |
-| `/api/contests` | `GET` | Public | List all contests with calculated status (`upcoming`, `running`, `ended`) |
-| `/api/contests/:id` | `GET` | Public | Get contest details, duration, & assigned problem list |
+| `/api/contests` | `GET` | Public (Optional Token) | List published contests with `status`, `created_by`, & `is_registered` status for signed-in users |
+| `/api/contests/:id` | `GET` | Public (Optional Token) | Get contest details, duration, & problems. Restricts unpublished draft contests to creator/admin |
 | `/api/contests` | `POST` | Authenticated | Host a new custom contest with title, description, time window, & problems |
 | `/api/contests/:id/join` | `POST` | Authenticated | Register current user for a contest |
+| `/api/contests/:id/join` | `DELETE` | Authenticated | Unregister / leave a contest |
 | `/api/contests/:id/problems` | `POST` | Host / Admin | Add or update problems in the contest problem set |
 | `/api/contests/:id/recalculate-ratings` | `POST` | Host / Admin | Calculate participant rating changes & refresh leaderboard matview |
 
@@ -147,6 +148,7 @@ backend/
 | `/api/admin/users/:id` | `DELETE` | Admin | Delete a user account |
 | `/api/admin/problems/:id` | `PUT` | Admin | Edit problem statement, limits, tags, & test cases |
 | `/api/admin/problems/:id` | `DELETE` | Admin | Permanently delete a problem |
+| `/api/admin/contests` | `GET` | Admin | List all contests including draft/unpublished ones |
 | `/api/admin/contests/:id` | `DELETE` | Admin | Delete a contest record |
 | `/api/admin/refresh-views` | `POST` | Admin | Refresh `contest_leaderboard_matview` materialized view |
 

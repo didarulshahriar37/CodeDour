@@ -25,6 +25,18 @@ const submitSolution = async (req, res, next) => {
 
         const userId = userResult.rows[0].user_id;
 
+        if (contest_id) {
+            const participantCheck = await pool.query(
+                `SELECT 1 FROM contest_participants WHERE contest_id = $1 AND user_id = $2`,
+                [contest_id, userId]
+            );
+            if (participantCheck.rows.length === 0) {
+                return res.status(403).json({
+                    error: 'Access denied. You must register for this contest before submitting solutions.'
+                });
+            }
+        }
+
         const submission = await pool.query(
             `INSERT INTO submissions (user_id, problem_id, contest_id, language, language_id, code, status) VALUES ($1, $2, $3, $4, $5, $6, 'Pending') RETURNING submission_id, user_id, problem_id, language, status, submitted_at`, [userId, problem_id, contest_id || null, language, language_id, code]
         );
@@ -87,10 +99,11 @@ const getSubmissionById = async (req, res, next) => {
 
 const getAllSubmissions = async (req, res, next) => {
     try {
-        const { page = 1, limit = 20, pageSize, status, language, problem_id, problemId } = req.query;
+        const { page = 1, limit = 20, pageSize, status, language, problem_id, problemId, contest_id, contestId } = req.query;
         const actualLimit = parseInt(pageSize || limit, 10);
         const offset = (parseInt(page, 10) - 1) * actualLimit;
         const targetProblemId = (problem_id || problemId) ? parseInt(problem_id || problemId, 10) : null;
+        const targetContestId = (contest_id || contestId) ? parseInt(contest_id || contestId, 10) : null;
 
         if (!req.user?.uid) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -132,6 +145,7 @@ const getAllSubmissions = async (req, res, next) => {
                 s.problem_id AS "problemId",
                 p.title AS "problemTitle",
                 p.slug AS "problemSlug",
+                s.contest_id,
                 s.language,
                 s.code,
                 s.status,
@@ -144,8 +158,9 @@ const getAllSubmissions = async (req, res, next) => {
               AND ($2::text IS NULL OR s.status = $2)
               AND ($3::text IS NULL OR s.language ILIKE '%' || $3 || '%')
               AND ($4::int IS NULL OR s.problem_id = $4)
+              AND ($5::int IS NULL OR s.contest_id = $5)
             ORDER BY s.submitted_at DESC
-            LIMIT $5 OFFSET $6
+            LIMIT $6 OFFSET $7
         `;
 
         const countQuery = `
@@ -155,11 +170,12 @@ const getAllSubmissions = async (req, res, next) => {
               AND ($2::text IS NULL OR s.status = $2)
               AND ($3::text IS NULL OR s.language ILIKE '%' || $3 || '%')
               AND ($4::int IS NULL OR s.problem_id = $4)
+              AND ($5::int IS NULL OR s.contest_id = $5)
         `;
 
         const [result, countResult] = await Promise.all([
-            pool.query(query, [userId, dbStatus, langFilter, targetProblemId, actualLimit, offset]),
-            pool.query(countQuery, [userId, dbStatus, langFilter, targetProblemId])
+            pool.query(query, [userId, dbStatus, langFilter, targetProblemId, targetContestId, actualLimit, offset]),
+            pool.query(countQuery, [userId, dbStatus, langFilter, targetProblemId, targetContestId])
         ]);
 
         const total = parseInt(countResult.rows[0]?.total || 0, 10);
